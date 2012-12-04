@@ -19,6 +19,7 @@ import org.json.JSONObject;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -212,12 +213,22 @@ public class FormHolder extends FragmentActivity implements Constants, OnClickLi
 	public boolean answerQuestion(ODKView odkView) {
 		return fw.answerQuestion(odkView.qd, odkView.answer);
 	}
+	
+	private void alertError(int str) {
+		Toast.makeText(this, getString(str), Toast.LENGTH_LONG).show();
+	}
 
 	public void saveForm() {
+		Intent intent = new Intent();
+		
 		switch(export_mode) {
 		case Form.ExportMode.JSON:
 			JSONObject json =  fw.processFormAsJSON();
-			getIntent().putExtra(Form.Extras.JSON_FORM, json.toString().getBytes());
+			if(json != null)
+				intent.putExtra(Form.Extras.JSON_FORM, json.toString().getBytes());
+			else
+				alertError(R.string.error_save_fail);
+			
 			break;
 		case Form.ExportMode.XML_URI:
 			File testDir = new File(Environment.getExternalStorageDirectory(), "odktest");
@@ -229,25 +240,22 @@ public class FormHolder extends FragmentActivity implements Constants, OnClickLi
 				OutputStream os = fw.processFormAsXML(new FileOutputStream(testFile));
 				os.flush();
 				os.close();
-				getIntent().setData(Uri.fromFile(testFile));
+				intent.setData(Uri.fromFile(testFile));
 			} catch (FileNotFoundException e) {
 				Log.e(LOG, e.toString());
 				e.printStackTrace();
+				alertError(R.string.error_save_fail);
 			} catch (IOException e) {
 				Log.e(LOG, e.toString());
 				e.printStackTrace();
+				alertError(R.string.error_save_fail);
 			}
+			
+			break;
 		}
 		
-		setResult(Activity.RESULT_OK, getIntent());
-		
-		//Intent intent = new Intent().putExtra(Form.Extras.JSON_FORM, json.toString().getBytes());
-		//setIntent(intent);
-		
-		
+		setResult(Activity.RESULT_OK, intent);
 		finish();
-		
-		//Toast.makeText(this, getString(R.string.error_save_fail), Toast.LENGTH_LONG).show();
 	}
 	
 	@Override
