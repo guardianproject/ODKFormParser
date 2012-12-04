@@ -1,0 +1,61 @@
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <style name="AppBaseTheme" parent="android:Theme.Light" />
+
+    <style name="AppTheme" parent="@android:style/Theme.Dialog">
+
+        <!-- All customizations that are NOT specific to a particular API-level can go here. -->
+        <item name="android:textAppearance">@style/P</item>
+    </style>
+
+    <style name="QuestionText">
+        <item name="android:layout_width">fill_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">#ffffffff</item>
+        <item name="android:textSize">16dip</item>
+    </style>
+
+    <style name="HintText">
+        <item name="android:layout_width">fill_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">#ffa6a6bb</item>
+        <item name="android:textSize">12dip</item>
+        <item name="android:textStyle">italic</item>
+    </style>
+
+    <style name="RootHolder">
+        <item name="android:background">#ff0a5587</item>
+    </style>
+
+    <style name="H1Holder">
+        <item name="android:background">#ff8fae22</item>
+    </style>
+
+    <style name="P" parent="@android:style/TextAppearance">
+        <item name="android:textColor">#ffffffff</item>
+    </style>
+
+    <style name="H1">
+        <item name="android:paddingLeft">6dip</item>
+        <item name="android:paddingRight">6dip</item>
+        <item name="android:textColor">#ffffffff</item>
+        <item name="android:textSize">24dip</item>
+    </style>
+
+    <style name="Button_standard">
+        <item name="android:textSize">14dip</item>
+        <item name="android:background">@drawable/standard_button_selector</item>
+        <item name="android:paddingLeft">4dip</item>
+        <item name="android:paddingRight">4dip</item>
+        <item name="android:paddingTop">8dip</item>
+        <item name="android:paddingBottom">8dip</item>
+        <item name="android:textColor">#ff0a5587</item>
+    </style>
+
+    <style name="EditText_standard">
+        <item name="android:background">@drawable/standard_edit_text</item>
+        <item name="android:textColor">#ffffffff</item>
+        <item name="android:textColorHint">#aaffffff</item>
+    </style>
+
+</resources>

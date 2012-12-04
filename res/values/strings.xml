@@ -1,0 +1,7 @@
+<resources>
+
+    <string name="app_name">ODKParser</string>
+    <string name="save">Save</string>
+	<string name="error_not_finished">You have not filled out all the required fields!</string>
+	<string name="error_save_fail">Sorry, could not save your form.</string>
+</resources>

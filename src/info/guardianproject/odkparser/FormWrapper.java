@@ -1,0 +1,357 @@
+package info.guardianproject.odkparser;
+
+import info.guardianproject.odkparser.ui.FormWidgetFactory.ODKView;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.javarosa.core.model.FormDef;
+import org.javarosa.core.model.FormIndex;
+import org.javarosa.core.model.QuestionDef;
+import org.javarosa.core.model.SelectChoice;
+import org.javarosa.core.model.condition.EvaluationContext;
+import org.javarosa.core.model.data.IAnswerData;
+import org.javarosa.core.model.instance.TreeElement;
+import org.javarosa.core.services.PrototypeManager;
+import org.javarosa.core.services.locale.Localizer;
+import org.javarosa.core.services.transport.payload.ByteArrayPayload;
+import org.javarosa.core.util.externalizable.ExtUtil;
+import org.javarosa.core.util.externalizable.PrototypeFactory;
+import org.javarosa.form.api.FormEntryCaption;
+import org.javarosa.form.api.FormEntryController;
+import org.javarosa.form.api.FormEntryModel;
+import org.javarosa.form.api.FormEntryPrompt;
+import org.javarosa.model.xform.XFormSerializingVisitor;
+import org.javarosa.xform.parse.XFormParser;
+import org.javarosa.xform.util.XFormUtils;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.w3c.dom.DOMException;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
+
+import android.content.Context;
+import android.os.Environment;
+import android.util.Log;
+
+
+public class FormWrapper implements Constants {
+	public FormDef form_def;
+	public FormIndex form_index;
+	public FormEntryController controller;
+	public FormEntryModel fem; 
+	public FormEntryPrompt fep;
+
+	public ArrayList<ODKView> questions;
+	private Map<String, String> answers = null;
+
+	public String title;
+	public int num_questions = 0;
+
+	Context context;
+
+	static PrototypeFactory pf;
+	static {
+		PrototypeManager.registerPrototype("org.javarosa.model.xform.XPathReference");
+		pf = ExtUtil.defaultPrototypes();
+	}
+
+	private static final String LOG = Logger.FORM;
+
+	public interface UIBinder {
+		public List<ODKView> getQuestionsForDisplay(int first, int last);
+		public FormEntryController controller();
+		public boolean answerQuestion(ODKView qd);
+		public void setMainTitle(String title);
+	}
+
+	public FormWrapper(FormDef form_def, Context context) {
+		this.context = context;
+		this.form_def = form_def;
+		init(null);
+	}
+	
+	public FormWrapper(InputStream xml, Context context) {
+		this.context = context;
+		form_def = loadDefinition(xml);
+		init(null);
+	}
+	
+	public FormWrapper(InputStream xml, byte[] oldAnswers, Context context) {
+		this.context = context;
+		form_def = loadDefinition(xml);
+		init(oldAnswers);
+	}
+	
+	public FormWrapper(FormDef form_def, byte[] oldAnswers, Context context) {
+		this.context = context;
+		this.form_def = form_def;
+		init(oldAnswers);
+	}
+
+	@SuppressWarnings("unused")
+	private QuestionDef getFirstQuestionDef() {
+		controller.jumpToIndex(FormIndex.createBeginningOfFormIndex());
+		do {
+			FormEntryCaption fec = fem.getCaptionPrompt();
+			if(fec.getFormElement() instanceof QuestionDef)
+				return (QuestionDef) fec.getFormElement();
+		} while(controller.stepToNextEvent() != FormEntryController.EVENT_END_OF_FORM);
+
+		return null;
+	}
+
+	@SuppressWarnings("unused")
+	private QuestionDef getCurrentQuestionDef() {
+		FormEntryCaption fec = fem.getCaptionPrompt();
+		if(fec.getFormElement() instanceof QuestionDef)
+			return (QuestionDef) fec.getFormElement();
+
+		return null;
+	}
+	
+	public void inflatePreviousAnswers(byte[] bytes) {		
+		TreeElement savedRoot = XFormParser.restoreDataModel(bytes, null).getRoot();
+		
+		for(int t=0; t<savedRoot.getNumChildren(); t++) {
+			TreeElement childElement = savedRoot.getChildAt(t);
+			
+			if(answers == null)
+				answers = new HashMap<String, String>();
+			
+			answers.put(childElement.getName(), childElement.getValue().getDisplayText());
+		}
+		
+		form_def.preloadInstance(savedRoot);
+		
+	}
+
+	private void init(byte[] oldAnswers) {
+		EvaluationContext ec = new EvaluationContext();
+		form_def.setEvaluationContext(ec);
+
+		fem = new FormEntryModel(form_def);
+		controller = new FormEntryController(fem);
+
+		if(oldAnswers != null)
+			inflatePreviousAnswers(oldAnswers);
+		else
+			form_def.initialize(true);
+		
+		title = controller.getModel().getForm().getTitle();
+		form_index = controller.getModel().getFormIndex();
+		
+		controller.jumpToIndex(FormIndex.createBeginningOfFormIndex());
+		Localizer l = form_def.getLocalizer();
+		l.setDefaultLocale(l.getAvailableLocales()[0]);
+		l.setLocale(l.getAvailableLocales()[0]);
+
+		do {
+			FormEntryCaption fec = fem.getCaptionPrompt();
+			if(fec.getFormElement() instanceof QuestionDef) {
+				if(questions == null)
+					questions = new ArrayList<ODKView>();
+
+				QuestionDef qd = (QuestionDef) fec.getFormElement();
+				ODKView odkView = null;
+				
+				if(answers != null && answers.containsKey(qd.getTextID()))
+					odkView = new ODKView(qd, context, answers.get(qd.getTextID()));
+				else
+					odkView = new ODKView(qd, context);
+
+				FormEntryPrompt fep = fem.getQuestionPrompt();
+				odkView.setTitle(fep.getQuestionText());
+
+				if(fep.getHelpText() != null)
+					odkView.setHelperText(fep.getHelpText());
+
+				if(fep.getControlType() == org.javarosa.core.model.Constants.CONTROL_SELECT_MULTI || fep.getControlType() == org.javarosa.core.model.Constants.CONTROL_SELECT_ONE) {
+					for(SelectChoice sc : fep.getSelectChoices()) {
+						if(fep.getControlType() == org.javarosa.core.model.Constants.CONTROL_SELECT_ONE)
+							odkView.addSelectChoice(sc, fep.getSelectChoiceText(sc), context, true);
+						else
+							odkView.addSelectChoice(sc, fep.getSelectChoiceText(sc), context);
+					}
+				}
+
+
+				questions.add(odkView);
+			}
+
+		} while(controller.stepToNextEvent() != FormEntryController.EVENT_END_OF_FORM);
+
+		num_questions = questions.size();
+	}	
+
+	public JSONObject processFormAsJSON() {
+		JSONObject informaObject = new JSONObject();
+		form_def.postProcessInstance();
+
+		try {
+			XFormSerializingVisitor serializer = new XFormSerializingVisitor();
+			ByteArrayPayload payload = new ByteArrayPayload(serializer.serializeInstance(form_def.getInstance()), form_def.getName(), form_def.getID());
+
+			DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+			DocumentBuilder db = dbf.newDocumentBuilder();
+			Document doc = db.parse(payload.getPayloadStream());
+			doc.getDocumentElement().normalize();
+			
+			NodeList answers = doc.getDocumentElement().getChildNodes();
+			Log.d(LOG, "there are " + answers.getLength() + " child nodes");
+			for(int n=0; n<answers.getLength(); n++) {
+				Node node = answers.item(n);
+				
+				Log.d(LOG, "node: " + node.getNodeName());
+				if(node.getNodeType() == Node.ELEMENT_NODE) {
+					try {
+						informaObject.put(node.getNodeName(), ((Element) node).getElementsByTagName(node.getNodeName()).item(0).getChildNodes().item(0).getNodeValue());
+					} catch(NullPointerException e) {
+						Log.e(LOG, "Could not get value for " + node.getNodeName() + "\n" + e.toString());
+						e.printStackTrace();
+					}
+					
+				}
+			}
+			
+			Log.d(LOG, "AS JSON (informa) \n" + informaObject.toString());
+
+			return informaObject;
+		} catch(IOException e) {
+			Log.e(LOG, e.toString());
+			e.printStackTrace();
+		} catch (ParserConfigurationException e) {
+			Log.e(LOG, e.toString());
+			e.printStackTrace();
+		} catch (SAXException e) {
+			Log.e(LOG, e.toString());
+			e.printStackTrace();
+		} catch (DOMException e) {
+			Log.e(LOG, e.toString());
+			e.printStackTrace();
+		} catch (JSONException e) {
+			Log.e(LOG, e.toString());
+			e.printStackTrace();
+		}
+
+
+		return null;
+	}
+
+	public OutputStream processFormAsXML(OutputStream os) {
+		Log.d(LOG, "SAVING AS XML NOW!");
+		try {
+			XFormSerializingVisitor serializer = new XFormSerializingVisitor();
+			ByteArrayPayload payload = new ByteArrayPayload(serializer.serializeInstance(form_def.getInstance()), form_def.getName(), form_def.getID());
+
+			InputStream is = payload.getPayloadStream();
+			byte[] data = new byte[(int) payload.getLength()];
+
+			int read = is.read(data, 0, (int) payload.getLength());
+			if(read > 0) {
+				os.write(data);
+				os.flush();
+				os.close();
+
+				return os;
+			}
+
+
+		} catch (FileNotFoundException e) {
+			Log.e(LOG, e.toString());
+			e.printStackTrace();
+		} catch (IOException e) {
+			Log.e(LOG, e.toString());
+			e.printStackTrace();
+		}
+
+		return null;
+	}
+
+	public boolean saveForm() {
+		try {
+
+			File testDir = new File(Environment.getExternalStorageDirectory(),"odktest");
+			if(!testDir.exists())
+				testDir.mkdir();
+
+
+			File testFile = new File(testDir, "text.xml");
+
+			XFormSerializingVisitor serializer = new XFormSerializingVisitor();
+			ByteArrayPayload payload = new ByteArrayPayload(serializer.serializeInstance(form_def.getInstance()), form_def.getName(), form_def.getID());
+
+			InputStream is = payload.getPayloadStream();
+			byte[] data = new byte[(int) payload.getLength()];
+
+			int read = is.read(data, 0, (int) payload.getLength());
+			if(read > 0) {
+				OutputStream os = new FileOutputStream(testFile);
+				os.write(data);
+				os.flush();
+				os.close();
+
+				return true;
+			}
+
+
+		} catch (FileNotFoundException e) {
+			Log.e(LOG, e.toString());
+			e.printStackTrace();
+		} catch (IOException e) {
+			Log.e(LOG, e.toString());
+			e.printStackTrace();
+		}
+
+
+		return false;
+	}
+
+	public boolean answerQuestion(QuestionDef qd, IAnswerData answer) {
+
+		int event = controller.jumpToIndex(FormIndex.createBeginningOfFormIndex());
+		do {
+			Log.d(LOG, "this event: " + event);
+			FormEntryCaption fec = fem.getCaptionPrompt();
+			if(fec.getFormElement() instanceof QuestionDef && ((QuestionDef) fec.getFormElement()).equals(qd)) {
+				controller.answerQuestion(answer);
+
+				return controller.saveAnswer(answer);
+
+			}
+
+		} while((event = controller.stepToNextEvent()) != FormEntryController.EVENT_END_OF_FORM);
+
+		return false;
+	}
+
+	public static FormDef loadDefinition(InputStream xml) {
+		return XFormUtils.getFormFromInputStream(xml);
+	}
+	
+	public static byte[] getBytesFromFile(File file) throws IOException {
+		byte[] bytes = new byte[(int) file.length()];
+		
+		FileInputStream fis = new FileInputStream(file);
+		fis.read(bytes, 0, bytes.length);
+		fis.close();
+		
+		return bytes;
+	}
+}

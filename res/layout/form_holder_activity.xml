@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" style="@style/RootHolder"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:weightSum="1.0" >
+    <LinearLayout style="@style/H1Holder"
+        android:id="@+id/form_holder_header"
+    	android:orientation="horizontal"
+    	android:layout_width="fill_parent"
+    	android:layout_height="0dip"
+    	android:layout_weight="0.1"
+    	android:paddingTop="4dip"
+    	android:paddingBottom="4dip"
+    	android:paddingLeft="6dip"
+    	android:paddingRight="6dip" >
+    	<ImageView 
+    		android:layout_width="wrap_content"
+    		android:layout_height="wrap_content"
+    		android:id="@+id/imageRegionThumb"
+    		android:src="@drawable/odkform"
+    		android:layout_marginRight="6dip" />
+    	<TextView style="@style/H1"
+    		android:layout_width="wrap_content"
+    		android:layout_height="wrap_content"
+    		android:layout_marginRight="6dip"
+    		android:layout_marginLeft="3dip"
+    		android:id="@+id/formNameHolder" />
+    </LinearLayout>
+
+	<android.support.v4.view.ViewPager
+	    android:id="@+id/frame_holder_pager"
+	    android:layout_width="fill_parent"
+	    android:layout_height="0dip"
+	    android:layout_weight="0.75" />
+
+	<LinearLayout 
+	    android:id="@+id/form_progress_holder"
+	    android:layout_width="fill_parent"
+	    android:layout_height="0dip"
+	    android:layout_weight="0.05"
+	    android:orientation="horizontal" />
+
+	<Button style="@style/Button_standard"
+	    android:id="@+id/form_save"
+	    android:layout_width="fill_parent"
+	    android:layout_height="0dip"
+	    android:layout_weight="0.1"
+	    android:text="@string/save" />
+
+</LinearLayout>
