@@ -46,7 +46,7 @@ public class FormPage extends Fragment implements Constants {
 		View top_root = li.inflate(R.layout.form_page_fragment, container, false);
 		form_page_root = top_root.findViewById(R.id.form_page_root);
 		
-		questions = ((UIBinder) a).getQuestionsForDisplay(bind_id, bind_id + Form.MAX_QUESTIONS_PER_PAGE);
+		questions = ((UIBinder) a).getQuestionsForDisplay(bind_id, bind_id + ((UIBinder) a).getMaxQuestionsPerPage());
 		return top_root;
 	}
 	

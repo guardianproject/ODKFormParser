@@ -44,11 +44,15 @@ public interface Constants {
 			public static final String PREVIOUS_ANSWERS = "previousAnswers";
 			public static final String JSON_FORM = "jsonFormResults";
 			public static final String EXPORT_MODE = "exportMode";
+			public final static String THUMBNAIL = "regionThumbnail";
+			public final static String DEF_PATH = "formDefPath";
+			public static final String MAX_QUESTIONS_PER_PAGE = "maxQuestionsPerPage";
 		}
 		
 		public final static class ExportMode {
 			public final static int JSON = 1;
 			public final static int XML_URI = 2;
+			public static final int XML_BAOS = 3;
 		}
 	}
 }

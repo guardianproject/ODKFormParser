@@ -6,10 +6,13 @@ import info.guardianproject.odkparser.R;
 import info.guardianproject.odkparser.FormWrapper.UIBinder;
 import info.guardianproject.odkparser.ui.FormWidgetFactory.ODKView;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.Vector;
@@ -20,6 +23,7 @@ import org.json.JSONObject;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -33,6 +37,7 @@ import android.support.v4.view.ViewPager;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
 import android.view.Window;
 import android.view.WindowManager;
@@ -48,9 +53,11 @@ public class FormHolder extends FragmentActivity implements Constants, OnClickLi
 
 	Button form_save;
 	LinearLayout progress_holder;
-	int d, d_, export_mode;
+	int d, d_, export_mode, num_bars;
+	int max_questions_per_page = Form.MAX_QUESTIONS_PER_PAGE;
 
-	Uri form_uri;
+	ByteArrayInputStream form_def_bytes = null;
+	
 	FormWrapper fw = null;
 
 	private static final String LOG = Logger.UI;
@@ -62,33 +69,43 @@ public class FormHolder extends FragmentActivity implements Constants, OnClickLi
 
 		setContentView(R.layout.form_holder_activity);
 		try {
-			form_uri = getIntent().getData();
+			Uri form_uri = getIntent().getData();
+			InputStream is = getContentResolver().openInputStream(form_uri);
+			byte[] bytes = new byte[is.available()];
+			is.read(bytes);
+			is.close();
+			
+			form_def_bytes = new ByteArrayInputStream(bytes);
 			Log.d(Logger.FORM, "form uri: " + form_uri.toString());
 
 		} catch(NullPointerException e) {
-			Log.e(Logger.FORM, e.toString());
+			Log.e(Logger.FORM, "trying to inflate from byte array...");
+			if(getIntent().hasExtra(Form.Extras.DEF_PATH))
+				form_def_bytes = new ByteArrayInputStream(getIntent().getByteArrayExtra(Form.Extras.DEF_PATH));
+			else 
+				finish();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
-			finish();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 		
 		if(getIntent().hasExtra(Form.Extras.EXPORT_MODE))
 			export_mode = getIntent().getIntExtra(Form.Extras.EXPORT_MODE, Form.ExportMode.XML_URI);
+		
+		if(getIntent().hasExtra(Form.Extras.MAX_QUESTIONS_PER_PAGE))
+			max_questions_per_page = getIntent().getIntExtra(Form.Extras.MAX_QUESTIONS_PER_PAGE, Form.MAX_QUESTIONS_PER_PAGE);
 
 		form_save = (Button) findViewById(R.id.form_save);
 		form_save.setOnClickListener(this);
 
-		try {
-			if(getIntent().hasExtra(Form.Extras.PREVIOUS_ANSWERS)) {
-				Log.d(LOG, "HAS EXTRAS FOR PREVIOUS ANSWERS");
-				fw = new FormWrapper(getContentResolver().openInputStream(form_uri), getIntent().getByteArrayExtra(Form.Extras.PREVIOUS_ANSWERS), this);
-			} else
-				fw = new FormWrapper(getContentResolver().openInputStream(form_uri), this);
-
-		} catch (FileNotFoundException e) {
-			Log.e(Logger.FORM, e.toString());
-			e.printStackTrace();
-			finish();
-		}
+		if(getIntent().hasExtra(Form.Extras.PREVIOUS_ANSWERS)) {
+			Log.d(LOG, "HAS EXTRAS FOR PREVIOUS ANSWERS");
+			fw = new FormWrapper(form_def_bytes, getIntent().getByteArrayExtra(Form.Extras.PREVIOUS_ANSWERS), this);
+		} else
+			fw = new FormWrapper(form_def_bytes, this);
 
 		if(fw == null)
 			finish();
@@ -120,11 +137,11 @@ public class FormHolder extends FragmentActivity implements Constants, OnClickLi
 	}
 	
 	private void initFormFragments() {
-		// 3 questions per fragment...
+		// 3 questions per fragment by default...
 		List<Fragment> fragments = new Vector<Fragment>();
 
 		for(int f=0; f<fw.num_questions; f++) {
-			if(f % Form.MAX_QUESTIONS_PER_PAGE == 0) {
+			if(f % max_questions_per_page == 0) {
 				Bundle args = new Bundle();
 				args.putInt(Form.Keys.BIND_ID, f);
 
@@ -143,15 +160,36 @@ public class FormHolder extends FragmentActivity implements Constants, OnClickLi
 
 		d = R.drawable.odkform_bullet_inactive;
 		d_ = R.drawable.odkform_bullet_active;
-
+		
+		num_bars = (fw.num_questions/max_questions_per_page);
+		if(fw.num_questions % max_questions_per_page > 0)
+			num_bars++;
+		
+		redrawProgressView();
+	}
+	
+	@Override
+	public void onConfigurationChanged(Configuration config) {
+		super.onConfigurationChanged(config);
+		redrawProgressView();
+	}
+	
+	private void redrawProgressView() {
 		@SuppressWarnings("deprecation")
 		int windowWidth = ((WindowManager) this.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getWidth();
-		LayoutParams lp = new LinearLayout.LayoutParams(windowWidth / Form.MAX_QUESTIONS_PER_PAGE, LayoutParams.WRAP_CONTENT);
+		LayoutParams lp = new LinearLayout.LayoutParams(windowWidth / (int) num_bars, LayoutParams.WRAP_CONTENT);
 
-		for(int p=0; p<fragments.size(); p++) {
+		progress_holder.removeAllViews();
+		
+		for(int p=0; p<odk_adapter.getCount(); p++) {
 			ImageView progress_view = new ImageView(this);
 			progress_view.setLayoutParams(lp);
 			progress_view.setBackgroundResource(p == 0 ? d_ : d);
+			
+			try {
+				((ViewGroup) progress_view.getParent()).removeView(progress_view);
+			} catch(NullPointerException e) {}
+			
 			progress_holder.addView(progress_view);
 		}
 	}
@@ -200,7 +238,10 @@ public class FormHolder extends FragmentActivity implements Constants, OnClickLi
 
 	@Override
 	public List<ODKView> getQuestionsForDisplay(int first, int last) {
-		return fw.questions.subList(first, last);
+		if(last <= fw.questions.size())
+			return fw.questions.subList(first, last);
+		else
+			return fw.questions.subList(first, fw.questions.size());
 
 	}
 
@@ -220,8 +261,25 @@ public class FormHolder extends FragmentActivity implements Constants, OnClickLi
 
 	public void saveForm() {
 		Intent intent = new Intent();
+		intent.putExtras(getIntent().getExtras());
 		
 		switch(export_mode) {
+		case Form.ExportMode.XML_BAOS:
+			try {
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				OutputStream os_ = fw.processFormAsXML(baos);
+				os_.flush();
+				os_.close();
+				
+				intent.putExtra(Form.Extras.PREVIOUS_ANSWERS, baos.toByteArray());
+			} catch (IOException e) {
+				Log.e(Logger.FORM, e.toString());
+				e.printStackTrace();
+			}
+			
+			
+			
+			break;
 		case Form.ExportMode.JSON:
 			JSONObject json =  fw.processFormAsJSON();
 			if(json != null)
@@ -269,6 +327,11 @@ public class FormHolder extends FragmentActivity implements Constants, OnClickLi
 			} else
 				Toast.makeText(this, getString(R.string.error_not_finished), Toast.LENGTH_LONG).show();
 		}
+	}
+
+	@Override
+	public int getMaxQuestionsPerPage() {
+		return max_questions_per_page;
 	}
 
 }

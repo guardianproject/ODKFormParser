@@ -79,6 +79,15 @@ public class FormWrapper implements Constants {
 		public FormEntryController controller();
 		public boolean answerQuestion(ODKView qd);
 		public void setMainTitle(String title);
+		public int getMaxQuestionsPerPage();
+	}
+	
+	public FormWrapper(InputStream xml, Context context, boolean touch) {
+		this.context = context;
+		form_def = loadDefinition(xml);
+		
+		if(!touch)
+			init(null);
 	}
 
 	public FormWrapper(FormDef form_def, Context context) {
@@ -140,6 +149,23 @@ public class FormWrapper implements Constants {
 		
 		form_def.preloadInstance(savedRoot);
 		
+	}
+	
+	public static JSONObject parseXMLAnswersAsJSON(byte[] bytes) {
+		TreeElement savedRoot = XFormParser.restoreDataModel(bytes, null).getRoot();
+		JSONObject answers = new JSONObject(); 
+		for(int t=0; t<savedRoot.getNumChildren(); t++) {
+			TreeElement childElement = savedRoot.getChildAt(t);
+			
+			try {
+				answers.put(childElement.getName(), childElement.getValue().getDisplayText());
+			} catch (JSONException e) {
+				e.printStackTrace();
+				continue;
+			}
+		}
+		
+		return answers;
 	}
 
 	private void init(byte[] oldAnswers) {
