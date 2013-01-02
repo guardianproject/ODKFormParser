@@ -46,7 +46,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import android.content.Context;
+import android.app.Activity;
 import android.os.Environment;
 import android.util.Log;
 
@@ -64,7 +64,7 @@ public class FormWrapper implements Constants {
 	public String title;
 	public int num_questions = 0;
 
-	Context context;
+	Activity context;
 
 	static PrototypeFactory pf;
 	static {
@@ -82,7 +82,7 @@ public class FormWrapper implements Constants {
 		public int getMaxQuestionsPerPage();
 	}
 	
-	public FormWrapper(InputStream xml, Context context, boolean touch) {
+	public FormWrapper(InputStream xml, Activity context, boolean touch) {
 		this.context = context;
 		form_def = loadDefinition(xml);
 		
@@ -90,25 +90,25 @@ public class FormWrapper implements Constants {
 			init(null);
 	}
 
-	public FormWrapper(FormDef form_def, Context context) {
+	public FormWrapper(FormDef form_def, Activity context) {
 		this.context = context;
 		this.form_def = form_def;
 		init(null);
 	}
 	
-	public FormWrapper(InputStream xml, Context context) {
+	public FormWrapper(InputStream xml, Activity context) {
 		this.context = context;
 		form_def = loadDefinition(xml);
 		init(null);
 	}
 	
-	public FormWrapper(InputStream xml, byte[] oldAnswers, Context context) {
+	public FormWrapper(InputStream xml, byte[] oldAnswers, Activity context) {
 		this.context = context;
 		form_def = loadDefinition(xml);
 		init(oldAnswers);
 	}
 	
-	public FormWrapper(FormDef form_def, byte[] oldAnswers, Context context) {
+	public FormWrapper(FormDef form_def, byte[] oldAnswers, Activity context) {
 		this.context = context;
 		this.form_def = form_def;
 		init(oldAnswers);
@@ -217,7 +217,6 @@ public class FormWrapper implements Constants {
 					}
 				}
 
-
 				questions.add(odkView);
 			}
 
@@ -303,6 +302,9 @@ public class FormWrapper implements Constants {
 			Log.e(LOG, e.toString());
 			e.printStackTrace();
 		} catch (IOException e) {
+			Log.e(LOG, e.toString());
+			e.printStackTrace();
+		} catch (NullPointerException e) {
 			Log.e(LOG, e.toString());
 			e.printStackTrace();
 		}

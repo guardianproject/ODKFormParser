@@ -5,6 +5,7 @@ import info.guardianproject.odkparser.FormWrapper;
 import info.guardianproject.odkparser.R;
 import info.guardianproject.odkparser.FormWrapper.UIBinder;
 import info.guardianproject.odkparser.ui.FormWidgetFactory.ODKView;
+import info.guardianproject.odkparser.ui.FormWidgetFactory.WidgetDataController;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -47,18 +48,21 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class FormHolder extends FragmentActivity implements Constants, OnClickListener, ViewPager.OnPageChangeListener, UIBinder {
+public class FormHolder extends FragmentActivity implements Constants, WidgetDataController, OnClickListener, ViewPager.OnPageChangeListener, UIBinder {
 	private ODKAdapter odk_adapter;
 	private ViewPager frame_holder_pager;
 
 	Button form_save;
 	LinearLayout progress_holder;
-	int d, d_, export_mode, num_bars;
+	int d, d_, num_bars;
+	
+	int export_mode = Form.ExportMode.XML_URI;
 	int max_questions_per_page = Form.MAX_QUESTIONS_PER_PAGE;
 
 	ByteArrayInputStream form_def_bytes = null;
 	
 	FormWrapper fw = null;
+	File dump;
 
 	private static final String LOG = Logger.UI;
 	boolean hasSeenLastPage = false;
@@ -92,6 +96,14 @@ public class FormHolder extends FragmentActivity implements Constants, OnClickLi
 			e.printStackTrace();
 		}
 		
+		if(getIntent().hasExtra(Form.Extras.DATA_DUMP))
+			dump = new File(getIntent().getStringExtra(Form.Extras.DATA_DUMP));
+		else
+			dump = new File(Environment.getExternalStorageDirectory(), "ODKFormUI");
+		
+		if(!dump.exists())
+			dump.mkdirs();
+		
 		if(getIntent().hasExtra(Form.Extras.EXPORT_MODE))
 			export_mode = getIntent().getIntExtra(Form.Extras.EXPORT_MODE, Form.ExportMode.XML_URI);
 		
@@ -117,6 +129,8 @@ public class FormHolder extends FragmentActivity implements Constants, OnClickLi
 		
 		if(getIntent().hasExtra(Form.Extras.DEFAULT_THUMB))
 			setMainIcon(getIntent().getByteArrayExtra(Form.Extras.DEFAULT_THUMB));
+		
+		
 
 		initFormFragments();
 	}
@@ -332,6 +346,17 @@ public class FormHolder extends FragmentActivity implements Constants, OnClickLi
 	@Override
 	public int getMaxQuestionsPerPage() {
 		return max_questions_per_page;
+	}
+	
+	@Override
+	public File openRecorderStream() {
+		return new File(dump, System.currentTimeMillis() + "_rec.3gp");
+	}
+
+	@Override
+	public void onSave() {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

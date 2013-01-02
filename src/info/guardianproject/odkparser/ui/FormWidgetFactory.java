@@ -1,7 +1,18 @@
 package info.guardianproject.odkparser.ui;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Vector;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import info.guardianproject.odkparser.Constants;
 import info.guardianproject.odkparser.R;
@@ -12,18 +23,30 @@ import org.javarosa.core.model.data.IAnswerData;
 import org.javarosa.core.model.data.SelectMultiData;
 import org.javarosa.core.model.data.SelectOneData;
 import org.javarosa.core.model.data.StringData;
+import org.javarosa.core.model.data.UncastData;
 import org.javarosa.core.model.data.helper.Selection;
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
+import android.media.MediaPlayer;
+import android.media.MediaPlayer.OnInfoListener;
+import android.media.MediaRecorder;
+import android.os.Handler;
+import android.util.Base64;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.SeekBar;
+import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
+import android.widget.ProgressBar;
 
 public class FormWidgetFactory {
 
@@ -31,12 +54,266 @@ public class FormWidgetFactory {
 
 	public interface WidgetDataController {
 		public void onSave();
+		public File openRecorderStream();
+	}
+	
+	public static class ODKMediaRecorder implements OnInfoListener {
+		File file;
+		MediaRecorder mr;
+		MediaPlayer mp;
+		
+		Button record, play_pause;
+		SeekBar progress_bar;
+		
+		ODKView odk_view;
+		Handler h;
+		
+		boolean is_recording = false;
+		boolean is_playing = false;
+		
+		public ODKMediaRecorder(ODKView odk_view) {			
+			this.odk_view = odk_view;
+			
+			record = (Button) this.odk_view.view.findViewById(R.id.widget_record);
+			record.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					if(is_recording)
+						stopRecording();
+					else
+						startRecording();
+				}
+			});
+			
+			play_pause = (Button) this.odk_view.view.findViewById(R.id.widget_play_or_pause);
+			play_pause.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					if(is_playing)
+						pauseRecording();
+					else
+						playRecording();
+				}
+			});
+			
+			progress_bar = (SeekBar) odk_view.answerHolder;
+			progress_bar.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
+
+				@Override
+				public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+					Log.d(LOG, "seekbar progress: " + progress);
+					if(fromUser) {
+						mp.seekTo(progress * 1000);
+					}
+					
+				}
+
+				@Override
+				public void onStartTrackingTouch(SeekBar seekBar) {}
+
+				@Override
+				public void onStopTrackingTouch(SeekBar seekBar) {}
+				
+			});
+			progress_bar.setProgress(0);
+
+			mr = new MediaRecorder();
+			mr.setAudioSource(MediaRecorder.AudioSource.MIC);
+			mr.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+			mr.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+			
+			mp = new MediaPlayer();
+			mp.setOnInfoListener(this);
+			
+			h = new Handler();
+			h.post(new Runnable() {
+				@Override
+				public void run() {
+					if(is_playing) {
+						if(mp.getCurrentPosition() >= mp.getDuration()) {
+								pauseRecording();
+								mp.seekTo(0);
+								return;
+						}
+						
+						int current_position = mp.getCurrentPosition()/1000;
+						progress_bar.setProgress(current_position);
+					}
+					h.postDelayed(this, 1000);
+				}
+			});
+			
+		}
+		
+		public void init() {
+			init(null);
+		}
+		
+		public void init(String audio_data) {
+			odk_view.answer = new UncastData();
+			file = ((WidgetDataController) odk_view.c).openRecorderStream();
+			
+			if(audio_data == null)
+				play_pause.setEnabled(false);
+			else {
+				try {
+					FileOutputStream fos = new FileOutputStream(file);
+					byte[] gzipped_audio = Base64.decode(audio_data.getBytes(), Base64.DEFAULT);
+					GZIPInputStream gzip = new GZIPInputStream(new ByteArrayInputStream(gzipped_audio));
+					
+					byte[] audio_bytes = new byte[1024];
+					int b;
+					while((b = gzip.read(audio_bytes)) > 0)
+						fos.write(audio_bytes, 0, b);
+					
+					fos.flush();
+					fos.close();
+					
+					processRecording();
+				} catch (FileNotFoundException e) {
+					Log.e(LOG, e.toString());
+					e.printStackTrace();
+				} catch (IOException e) {
+					Log.e(LOG, e.toString());
+					e.printStackTrace();
+				}
+				
+			}
+			
+			mr.setOutputFile(file.getAbsolutePath());
+		}
+		
+		public void shutDown() {
+			mp.release();
+			mr.release();
+			file.delete();
+		}
+		
+		private void processRecording() {
+			mp.stop();
+			mp.reset();
+			
+			try {
+				Log.d(LOG, file.getAbsolutePath());
+
+				mp.setDataSource(file.getAbsolutePath());
+				mp.prepare();
+				
+				progress_bar.setMax(mp.getDuration()/1000);
+			} catch (IllegalArgumentException e) {
+				Log.e(LOG, e.toString());
+				e.printStackTrace();
+			} catch (SecurityException e) {
+				Log.e(LOG, e.toString());
+				e.printStackTrace();
+			} catch (IllegalStateException e) {
+				Log.e(LOG, e.toString());
+				e.printStackTrace();
+			} catch (IOException e) {
+				Log.e(LOG, e.toString());
+				e.printStackTrace();
+			}
+			
+			try {
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				GZIPOutputStream gos = new GZIPOutputStream(baos);
+				FileInputStream fis = new FileInputStream(file);
+				
+				byte[] audio_bytes = new byte[1024];
+				int b;
+				while((b = fis.read(audio_bytes)) > 0)
+					gos.write(audio_bytes, 0, b);
+				
+				fis.close();
+				gos.finish();
+				gos.close();
+				
+				baos.flush();
+				baos.close();
+				
+				odk_view.answer.setValue(Base64.encodeToString(baos.toByteArray(), Base64.DEFAULT));
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		private void playRecording() {
+			play_pause.setText("pz");
+			record.setEnabled(false);
+			
+			try {
+				mp.start();
+				is_playing = true;
+				
+			} catch (IllegalArgumentException e) {
+				Log.e(LOG, e.toString());
+				e.printStackTrace();
+			} catch (SecurityException e) {
+				Log.e(LOG, e.toString());
+				e.printStackTrace();
+			} catch (IllegalStateException e) {
+				Log.e(LOG, e.toString());
+				e.printStackTrace();
+			}
+		}
+		
+		private void pauseRecording() {
+			play_pause.setText("pl");
+			
+			mp.pause();
+			is_playing = false;
+			
+			record.setEnabled(true);
+		}
+		
+		private void startRecording() {
+			try {
+				mr.prepare();
+				mr.start();
+				
+				is_recording = true;
+				record.setText("r*");
+				
+				play_pause.setEnabled(false);
+				
+			} catch (IllegalStateException e) {
+				Log.e(LOG, e.toString());
+				e.printStackTrace();
+			} catch (IOException e) {
+				Log.e(LOG, e.toString());
+				e.printStackTrace();
+			}
+			
+		}
+		
+		private void stopRecording() {
+			mr.stop();
+			mr.release();
+			
+			is_recording = false;
+			record.setText("r");
+			
+			play_pause.setEnabled(true);
+			processRecording();
+		}
+
+		@Override
+		public boolean onInfo(MediaPlayer mp, int what, int extra) {
+			Log.d(LOG, "on info: " + what + "> " + extra);
+			return false;
+		}
 	}
 
 	public static class ODKView {
 		View view, answerHolder;
 		QuestionDef qd;
 		IAnswerData answer;
+		ODKMediaRecorder omr;
+		Activity c;
 
 		TextView question_text;
 		LinearLayout choiceHolder = null;
@@ -44,11 +321,15 @@ public class FormWidgetFactory {
 		List<SelectChoiceWidget> selectChoices = null;
 		boolean hasInitialValue = false;
 
-		public ODKView(QuestionDef qd, Context c, String initialValue) {
+		public ODKView(QuestionDef qd, Activity c, String initialValue) {
+			this.c = c;
 			this.qd = qd;
+			this.omr = null;
+			
 			if(initialValue != null)
 				hasInitialValue = true;
 
+			Log.d(LOG, "control type: " + qd.getControlType());
 			switch(qd.getControlType()) {
 			case org.javarosa.core.model.Constants.CONTROL_INPUT:
 				view = LayoutInflater.from(c).inflate(R.layout.widget_textinput, null);
@@ -84,12 +365,24 @@ public class FormWidgetFactory {
 					((SelectMultiData) answer).setValue(selections);
 				}
 				break;
+			case org.javarosa.core.model.Constants.CONTROL_AUDIO_CAPTURE:
+				view = LayoutInflater.from(c).inflate(R.layout.widget_audio, null);
+				
+				answerHolder = (ProgressBar) view.findViewById(R.id.widget_play_progress);
+				omr = new ODKMediaRecorder(this);
+				
+				if(hasInitialValue) {
+					omr.init(String.valueOf(initialValue));
+				} else
+					omr.init();
+				
+				break;
 			}
 
 			question_text = (TextView) view.findViewById(R.id.widget_title);
 		}
 
-		public ODKView(QuestionDef qd, Context c) {
+		public ODKView(QuestionDef qd, Activity c) {
 			this(qd, c, null);
 		}
 
@@ -108,7 +401,8 @@ public class FormWidgetFactory {
 				answerHolder = selectChoices.get(((Selection) answer.getValue()).index).cb;
 				((CheckBox) answerHolder).setChecked(true);
 				break;
-
+			case org.javarosa.core.model.Constants.CONTROL_AUDIO_CAPTURE:
+				break;
 			}
 		}
 
@@ -149,6 +443,8 @@ public class FormWidgetFactory {
 							break;
 						}
 					}
+				} else if(answerHolder instanceof SeekBar) {
+					omr.shutDown();
 				}
 
 				return true;

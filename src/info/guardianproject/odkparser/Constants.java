@@ -47,6 +47,7 @@ public interface Constants {
 			public final static String THUMBNAIL = "regionThumbnail";
 			public final static String DEF_PATH = "formDefPath";
 			public static final String MAX_QUESTIONS_PER_PAGE = "maxQuestionsPerPage";
+			public static final String DATA_DUMP = "dataDump";
 		}
 		
 		public final static class ExportMode {

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+    <TextView
+        android:id="@+id/widget_title"
+        style="@style/QuestionText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:weightSum="1.0" >
+
+        <Button
+            android:id="@+id/widget_record"
+            android:layout_width="0dip"
+            android:layout_weight="0.15"
+            android:layout_height="wrap_content"
+            android:text="r" />
+
+        <Button
+            android:id="@+id/widget_play_or_pause"
+            android:layout_width="0dip"
+            android:layout_weight="0.15"
+            android:layout_height="wrap_content"
+            android:text="pl" />
+
+        <SeekBar
+            android:id="@+id/widget_play_progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="0dip"
+            android:progress="0"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.7"
+            android:indeterminate="false"
+            android:paddingRight="6dip"
+            android:paddingLeft="6dip"
+            android:orientation="horizontal" />
+
+    </LinearLayout>
+
+</LinearLayout>

@@ -1,18 +1,10 @@
 package info.guardianproject.odkparser.ui;
 
 import java.util.List;
-import java.util.Vector;
-
-import org.javarosa.core.model.QuestionDef;
 
 import info.guardianproject.odkparser.Constants;
-import info.guardianproject.odkparser.FormWrapper;
 import info.guardianproject.odkparser.R;
-import info.guardianproject.odkparser.Constants.Form;
-import info.guardianproject.odkparser.Constants.Logger;
-import info.guardianproject.odkparser.Constants.Form.Keys;
 import info.guardianproject.odkparser.FormWrapper.UIBinder;
-import info.guardianproject.odkparser.R.layout;
 import info.guardianproject.odkparser.ui.FormWidgetFactory.ODKView;
 import android.app.Activity;
 import android.os.Bundle;
@@ -22,7 +14,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 
 public class FormPage extends Fragment implements Constants {
 	private static final String LOG = Logger.UI;
@@ -34,7 +25,6 @@ public class FormPage extends Fragment implements Constants {
 	
 	@Override
 	public View onCreateView(LayoutInflater li, ViewGroup container, Bundle savedInstanceState) {
-		Log.d(LOG, "createview called");
 		if(container == null)
 			return null;
 		
@@ -86,6 +76,7 @@ public class FormPage extends Fragment implements Constants {
 	}
 
 	public void getAnswers() {
+		Log.d(LOG, "getting answers...");
 		for(ODKView odkView : questions) {
 			if(odkView.setAnswer()) {
 				if(((UIBinder) a).answerQuestion(odkView)) {
@@ -93,6 +84,7 @@ public class FormPage extends Fragment implements Constants {
 				}
 			} else {
 				// answer not set, should be skipped
+				continue;
 			}
 		}
 	}
