@@ -76,16 +76,12 @@ public class FormPage extends Fragment implements Constants {
 	}
 
 	public void getAnswers() {
-		Log.d(LOG, "getting answers...");
 		for(ODKView odkView : questions) {
-			if(odkView.setAnswer()) {
-				if(((UIBinder) a).answerQuestion(odkView)) {
-					Log.d(LOG, "answered the question!");
-				}
-			} else {
-				// answer not set, should be skipped
+			if(odkView.setAnswer())
+				((UIBinder) a).answerQuestion(odkView);
+			else
 				continue;
-			}
+			
 		}
 	}
 }

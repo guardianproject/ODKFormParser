@@ -144,7 +144,14 @@ public class FormWrapper implements Constants {
 			if(answers == null)
 				answers = new HashMap<String, String>();
 			
-			answers.put(childElement.getName(), childElement.getValue().getDisplayText());
+			try {
+				answers.put(childElement.getName(), childElement.getValue().getDisplayText());
+			} catch(NullPointerException e) {
+				// there is no value here
+				Log.e(LOG, e.toString());
+				e.printStackTrace();
+				continue;
+			}
 		}
 		
 		form_def.preloadInstance(savedRoot);
@@ -169,12 +176,12 @@ public class FormWrapper implements Constants {
 	}
 
 	private void init(byte[] oldAnswers) {
-		EvaluationContext ec = new EvaluationContext();
+		EvaluationContext ec = new EvaluationContext();		
 		form_def.setEvaluationContext(ec);
 
 		fem = new FormEntryModel(form_def);
 		controller = new FormEntryController(fem);
-
+		
 		if(oldAnswers != null)
 			inflatePreviousAnswers(oldAnswers);
 		else
@@ -312,7 +319,7 @@ public class FormWrapper implements Constants {
 		return null;
 	}
 
-	public boolean saveForm() {
+	public boolean saveTest() {
 		try {
 
 			File testDir = new File(Environment.getExternalStorageDirectory(),"odktest");
@@ -358,6 +365,7 @@ public class FormWrapper implements Constants {
 			Log.d(LOG, "this event: " + event);
 			FormEntryCaption fec = fem.getCaptionPrompt();
 			if(fec.getFormElement() instanceof QuestionDef && ((QuestionDef) fec.getFormElement()).equals(qd)) {
+				Log.d(LOG, "fyi answer data: " + answer.hashCode() + " (" + answer.toString() + ")");
 				controller.answerQuestion(answer);
 
 				return controller.saveAnswer(answer);

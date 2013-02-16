@@ -1,6 +1,5 @@
 package info.guardianproject.odkparser.ui;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -8,7 +7,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 import java.util.Vector;
 import java.util.zip.GZIPInputStream;
@@ -150,7 +148,6 @@ public class FormWidgetFactory {
 		}
 		
 		public void init(String audio_data) {
-			odk_view.answer = new UncastData();
 			file = ((WidgetDataController) odk_view.c).openRecorderStream();
 			
 			if(audio_data == null)
@@ -184,6 +181,9 @@ public class FormWidgetFactory {
 		}
 		
 		public void shutDown() {
+			is_playing = false;
+			is_recording = false;
+			
 			mp.release();
 			mr.release();
 			file.delete();
@@ -233,10 +233,10 @@ public class FormWidgetFactory {
 				
 				odk_view.answer.setValue(Base64.encodeToString(baos.toByteArray(), Base64.DEFAULT));
 			} catch (FileNotFoundException e) {
-				// TODO Auto-generated catch block
+				Log.e(LOG, e.toString());
 				e.printStackTrace();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
+				Log.e(LOG, e.toString());
 				e.printStackTrace();
 			}
 		}
@@ -326,17 +326,17 @@ public class FormWidgetFactory {
 			this.qd = qd;
 			this.omr = null;
 			
+			this.answer = new UncastData("");
+			
 			if(initialValue != null)
 				hasInitialValue = true;
 
-			Log.d(LOG, "control type: " + qd.getControlType());
 			switch(qd.getControlType()) {
 			case org.javarosa.core.model.Constants.CONTROL_INPUT:
 				view = LayoutInflater.from(c).inflate(R.layout.widget_textinput, null);
-				if(!hasInitialValue)
-					answer = new StringData();
-				else
+				if(hasInitialValue)
 					answer = new StringData(String.valueOf(initialValue));
+				
 				answerHolder = (TextView) view.findViewById(R.id.widget_edittext);
 
 				break;
@@ -424,6 +424,7 @@ public class FormWidgetFactory {
 							for(SelectChoiceWidget scw : selectChoices) {
 								if(((CheckBox) ((LinearLayout) answerHolder).getChildAt(c)).equals(scw.cb)) {								
 									choices.add(scw.sc.selection());
+									Log.d(LOG, "CHOICE: " + scw.sc.selection().xmlValue);
 									break;
 								}
 							}
@@ -433,18 +434,22 @@ public class FormWidgetFactory {
 					((SelectMultiData) answer).setValue(choices);
 
 				} else if(answerHolder.getClass().getName().equals(EditText.class.getName())) {
-					if(((EditText) answerHolder).getEditableText().toString().length() > 0)
+					if(((EditText) answerHolder).getEditableText().toString().length() > 0) {
 						((StringData) answer).setValue(((EditText) answerHolder).getEditableText().toString());
+						Log.d(LOG, "CHOICE: " + ((StringData) answer).getValue());
+					}
 				} else if(answerHolder instanceof CheckBox) {
 
 					for(SelectChoiceWidget scw : selectChoices) {
 						if(((CheckBox) answerHolder).equals(scw.cb)) {						
 							((SelectOneData) answer).setValue(scw.sc.selection());
+							Log.d(LOG, "CHOICE: " + scw.sc.selection().xmlValue);
 							break;
 						}
 					}
 				} else if(answerHolder instanceof SeekBar) {
 					omr.shutDown();
+					Log.d(LOG, "CHOICE: " + omr.file.getAbsolutePath());
 				}
 
 				return true;
@@ -454,9 +459,6 @@ public class FormWidgetFactory {
 			} catch(NullPointerException e) {
 				Log.e(LOG, e.toString());
 				e.printStackTrace();
-
-				Log.e(LOG, "this answer is null");
-
 			}
 
 			return false;

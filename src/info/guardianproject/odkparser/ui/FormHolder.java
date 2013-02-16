@@ -89,10 +89,10 @@ public class FormHolder extends FragmentActivity implements Constants, WidgetDat
 			else 
 				finish();
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
+			Log.e(Logger.FORM, e.toString());
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
+			Log.e(Logger.FORM, e.toString());
 			e.printStackTrace();
 		}
 		
@@ -277,6 +277,8 @@ public class FormHolder extends FragmentActivity implements Constants, WidgetDat
 		Intent intent = new Intent();
 		intent.putExtras(getIntent().getExtras());
 		
+		// XXX: CHECK FOR EMPTIES
+		
 		switch(export_mode) {
 		case Form.ExportMode.XML_BAOS:
 			try {
@@ -290,8 +292,6 @@ public class FormHolder extends FragmentActivity implements Constants, WidgetDat
 				Log.e(Logger.FORM, e.toString());
 				e.printStackTrace();
 			}
-			
-			
 			
 			break;
 		case Form.ExportMode.JSON:
