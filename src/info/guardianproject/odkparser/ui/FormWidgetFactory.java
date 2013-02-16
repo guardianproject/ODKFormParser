@@ -336,6 +336,8 @@ public class FormWidgetFactory {
 				view = LayoutInflater.from(c).inflate(R.layout.widget_textinput, null);
 				if(hasInitialValue)
 					answer = new StringData(String.valueOf(initialValue));
+				else
+					answer = new StringData("");
 				
 				answerHolder = (TextView) view.findViewById(R.id.widget_edittext);
 
