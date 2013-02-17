@@ -169,6 +169,9 @@ public class FormWrapper implements Constants {
 			} catch (JSONException e) {
 				e.printStackTrace();
 				continue;
+			} catch (NullPointerException e) {
+				e.printStackTrace();
+				continue;
 			}
 		}
 		
