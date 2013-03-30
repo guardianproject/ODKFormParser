@@ -1,6 +1,6 @@
 package info.guardianproject.odkparser;
 
-import info.guardianproject.odkparser.ui.FormWidgetFactory.ODKView;
+import info.guardianproject.odkparser.utils.QD;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -58,13 +58,11 @@ public class FormWrapper implements Constants {
 	public FormEntryModel fem; 
 	public FormEntryPrompt fep;
 
-	public ArrayList<ODKView> questions;
+	public ArrayList<QD> questions;
 	private Map<String, String> answers = null;
 
 	public String title;
 	public int num_questions = 0;
-
-	Activity context;
 
 	static PrototypeFactory pf;
 	static {
@@ -73,43 +71,30 @@ public class FormWrapper implements Constants {
 	}
 
 	private static final String LOG = Logger.FORM;
-
-	public interface UIBinder {
-		public List<ODKView> getQuestionsForDisplay(int first, int last);
-		public FormEntryController controller();
-		public boolean answerQuestion(ODKView qd);
-		public void setMainTitle(String title);
-		public int getMaxQuestionsPerPage();
-	}
 	
-	public FormWrapper(InputStream xml, Activity context, boolean touch) {
-		this.context = context;
+	public FormWrapper(InputStream xml, boolean touch) {
 		form_def = loadDefinition(xml);
 		
 		if(!touch)
 			init(null);
 	}
 
-	public FormWrapper(FormDef form_def, Activity context) {
-		this.context = context;
+	public FormWrapper(FormDef form_def) {
 		this.form_def = form_def;
 		init(null);
 	}
 	
-	public FormWrapper(InputStream xml, Activity context) {
-		this.context = context;
+	public FormWrapper(InputStream xml) {
 		form_def = loadDefinition(xml);
 		init(null);
 	}
 	
-	public FormWrapper(InputStream xml, byte[] oldAnswers, Activity context) {
-		this.context = context;
+	public FormWrapper(InputStream xml, byte[] oldAnswers) {
 		form_def = loadDefinition(xml);
 		init(oldAnswers);
 	}
 	
-	public FormWrapper(FormDef form_def, byte[] oldAnswers, Activity context) {
-		this.context = context;
+	public FormWrapper(FormDef form_def, byte[] oldAnswers) {
 		this.form_def = form_def;
 		init(oldAnswers);
 	}
@@ -178,7 +163,7 @@ public class FormWrapper implements Constants {
 		return answers;
 	}
 
-	private void init(byte[] oldAnswers) {
+	private List<QD> init(byte[] oldAnswers) {
 		EvaluationContext ec = new EvaluationContext();		
 		form_def.setEvaluationContext(ec);
 
@@ -202,22 +187,24 @@ public class FormWrapper implements Constants {
 			FormEntryCaption fec = fem.getCaptionPrompt();
 			if(fec.getFormElement() instanceof QuestionDef) {
 				if(questions == null)
-					questions = new ArrayList<ODKView>();
+					questions = new ArrayList<QD>();
 
 				QuestionDef qd = (QuestionDef) fec.getFormElement();
-				ODKView odkView = null;
+				QD questionDef = null;
 				
 				if(answers != null && answers.containsKey(qd.getTextID()))
-					odkView = new ODKView(qd, context, answers.get(qd.getTextID()));
+					// TOD: if we have an answer
+					questionDef = new QD(qd);
 				else
-					odkView = new ODKView(qd, context);
+					questionDef = new QD(qd);
 
 				FormEntryPrompt fep = fem.getQuestionPrompt();
-				odkView.setTitle(fep.getQuestionText());
+				questionDef.questionText = fep.getQuestionText();
 
 				if(fep.getHelpText() != null)
-					odkView.setHelperText(fep.getHelpText());
+					questionDef.helperText = fep.getHelpText();
 
+				/*
 				if(fep.getControlType() == org.javarosa.core.model.Constants.CONTROL_SELECT_MULTI || fep.getControlType() == org.javarosa.core.model.Constants.CONTROL_SELECT_ONE) {
 					for(SelectChoice sc : fep.getSelectChoices()) {
 						if(fep.getControlType() == org.javarosa.core.model.Constants.CONTROL_SELECT_ONE)
@@ -226,13 +213,15 @@ public class FormWrapper implements Constants {
 							odkView.addSelectChoice(sc, fep.getSelectChoiceText(sc), context);
 					}
 				}
+				*/
 
-				questions.add(odkView);
+				questions.add(questionDef);
 			}
 
 		} while(controller.stepToNextEvent() != FormEntryController.EVENT_END_OF_FORM);
 
 		num_questions = questions.size();
+		return questions;
 	}	
 
 	public JSONObject processFormAsJSON() {
