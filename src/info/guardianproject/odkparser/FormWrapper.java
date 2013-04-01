@@ -46,7 +46,6 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import android.app.Activity;
 import android.os.Environment;
 import android.util.Log;
 
@@ -203,17 +202,14 @@ public class FormWrapper implements Constants {
 
 				if(fep.getHelpText() != null)
 					questionDef.helperText = fep.getHelpText();
-
-				/*
+				
 				if(fep.getControlType() == org.javarosa.core.model.Constants.CONTROL_SELECT_MULTI || fep.getControlType() == org.javarosa.core.model.Constants.CONTROL_SELECT_ONE) {
+					questionDef.selectChoiceText = new ArrayList<String>();
 					for(SelectChoice sc : fep.getSelectChoices()) {
-						if(fep.getControlType() == org.javarosa.core.model.Constants.CONTROL_SELECT_ONE)
-							odkView.addSelectChoice(sc, fep.getSelectChoiceText(sc), context, true);
-						else
-							odkView.addSelectChoice(sc, fep.getSelectChoiceText(sc), context);
+						questionDef.selectChoiceText.add(fep.getSelectChoiceText(sc));
 					}
 				}
-				*/
+
 
 				questions.add(questionDef);
 			}
