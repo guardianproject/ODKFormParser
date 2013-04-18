@@ -172,6 +172,12 @@ public class ODKSeekBar extends SeekBar implements OnSeekBarChangeListener, OnIn
 		}
 	}
 	
+	public void shutDown() {
+		mp.release();
+		mr.release();
+		recordingFile.delete();
+	}
+	
 	public void play() {
 		canRecord = false;
 		mp.start();
