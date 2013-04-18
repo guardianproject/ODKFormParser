@@ -4,7 +4,6 @@
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
 	<classpathentry kind="lib" path="libs/javarosa-libraries.jar"/>
 	<classpathentry kind="lib" path="libs/kxml2-2.3.0.jar"/>
-	<classpathentry kind="lib" path="/ActionBarSherlock/libs/android-support-v4.jar"/>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="gen"/>
 	<classpathentry kind="output" path="bin/classes"/>

@@ -59,7 +59,14 @@ public class QD extends Model {
 	}
 	
 	public QD(QuestionDef questionDef) {
+		this(questionDef, null);
+	}
+	
+	public QD(QuestionDef questionDef, String initialValue) {
 		setQuestionDef(questionDef);
+		if(initialValue != null) {
+			this.initialValue = initialValue;
+		}
 	}
 	
 	public QD(View answerHolder) {
@@ -135,7 +142,7 @@ public class QD extends Model {
 		case org.javarosa.core.model.Constants.CONTROL_INPUT:
 			if(((EditText) answerHolder).getText().length() > 0) {
 				((StringData) answer).setValue(((EditText) answerHolder).getText().toString());
-				Log.d(LOG, "setting answer " + ((StringData) answer).getValue());
+				Log.d(LOG, "setting answer " + ((EditText) answerHolder).getText().toString());
 			}
 		
 			break;
@@ -146,6 +153,7 @@ public class QD extends Model {
 						((RadioButton) ((ViewGroup) answerHolder).getChildAt(o)).isChecked()
 				) {
 					((SelectOneData) answer).setValue(questionDef.getChoices().get(o).selection());
+					Log.d(LOG, "setting answer " + questionDef.getChoices().get(o).selection().xmlValue);
 					break;
 				}
 			}
@@ -163,7 +171,7 @@ public class QD extends Model {
 					}
 					
 					choices.add(questionDef.getChoices().get(choiceIndex).selection());
-					
+					Log.d(LOG, "setting answer " + questionDef.getChoices().get(choiceIndex).selection().xmlValue);
 				}
 				
 				choiceIndex++;

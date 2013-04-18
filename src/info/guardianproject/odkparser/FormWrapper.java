@@ -125,15 +125,17 @@ public class FormWrapper implements Constants {
 		for(int t=0; t<savedRoot.getNumChildren(); t++) {
 			TreeElement childElement = savedRoot.getChildAt(t);
 			
-			if(answers == null)
+			if(answers == null) {
 				answers = new HashMap<String, String>();
+			}
 			
 			try {
-				answers.put(childElement.getName(), childElement.getValue().getDisplayText());
+				Log.d(LOG, "HERE IS " + childElement.getValue().getValue());
+				answers.put(childElement.getName(), String.valueOf(childElement.getValue().getValue()));
 			} catch(NullPointerException e) {
 				// there is no value here
-				Log.e(LOG, e.toString());
-				e.printStackTrace();
+				Log.e(LOG, "no value for " + childElement.getName());
+				
 				continue;
 			}
 		}
@@ -189,11 +191,11 @@ public class FormWrapper implements Constants {
 					questions = new ArrayList<QD>();
 
 				QuestionDef qd = (QuestionDef) fec.getFormElement();
+				Log.d(LOG, "this question def textId: " + qd.getTextID());
 				QD questionDef = null;
 				
 				if(answers != null && answers.containsKey(qd.getTextID()))
-					// TOD: if we have an answer
-					questionDef = new QD(qd);
+					questionDef = new QD(qd, answers.get(qd.getTextID()));
 				else
 					questionDef = new QD(qd);
 
@@ -353,7 +355,7 @@ public class FormWrapper implements Constants {
 			Log.d(LOG, "this event: " + event);
 			FormEntryCaption fec = fem.getCaptionPrompt();
 			if(fec.getFormElement() instanceof QuestionDef && ((QuestionDef) fec.getFormElement()).equals(qd)) {
-				Log.d(LOG, "fyi answer data: " + answer.hashCode() + " (" + answer.toString() + ")");
+				Log.d(LOG, "fyi answer data: " + answer.hashCode() + " (" + answer.getValue() + ")");
 				controller.answerQuestion(answer);
 
 				return controller.saveAnswer(answer);
