@@ -2,6 +2,7 @@ package info.guardianproject.odkparser.utils;
 
 import info.guardianproject.odkparser.FormWrapper;
 import info.guardianproject.odkparser.R;
+import info.guardianproject.odkparser.widgets.ODKSeekBar;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -180,6 +181,7 @@ public class QD extends Model {
 			((SelectMultiData) answer).setValue(choices);
 			break;
 		case org.javarosa.core.model.Constants.CONTROL_AUDIO_CAPTURE:
+			((UncastData) answer).setValue(((ODKSeekBar) answerHolder).rawAudioData);
 			break;
 		}
 	}
@@ -236,11 +238,11 @@ public class QD extends Model {
 			break;
 		case org.javarosa.core.model.Constants.CONTROL_AUDIO_CAPTURE:
 			answer = new UncastData("");
-			
-			
+
 			if(initialValue != null) {
 				answer = new UncastData(initialValue);
 				((UncastData) answer).setValue(initialValue);
+				((ODKSeekBar) answerHolder).setRawAudioData(initialValue.getBytes());
 			}
 			
 			break;
