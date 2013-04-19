@@ -24,6 +24,10 @@ public class Form extends Model {
 	FormWrapper fw = null;
 	Activity a = null;
 	
+	public interface ODKFormListener {
+		public boolean saveForm();
+	}
+	
 	public Form(Activity a, InputStream is) {
 		this.a = a;
 		fw = new FormWrapper(is);

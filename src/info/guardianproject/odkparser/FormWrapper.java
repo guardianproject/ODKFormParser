@@ -70,10 +70,10 @@ public class FormWrapper implements Constants {
 	}
 
 	private static final String LOG = Logger.FORM;
-	
+
 	public FormWrapper(InputStream xml, boolean touch) {
 		form_def = loadDefinition(xml);
-		
+
 		if(!touch)
 			init(null);
 	}
@@ -82,17 +82,17 @@ public class FormWrapper implements Constants {
 		this.form_def = form_def;
 		init(null);
 	}
-	
+
 	public FormWrapper(InputStream xml) {
 		form_def = loadDefinition(xml);
 		init(null);
 	}
-	
+
 	public FormWrapper(InputStream xml, byte[] oldAnswers) {
 		form_def = loadDefinition(xml);
 		init(oldAnswers);
 	}
-	
+
 	public FormWrapper(FormDef form_def, byte[] oldAnswers) {
 		this.form_def = form_def;
 		init(oldAnswers);
@@ -118,38 +118,38 @@ public class FormWrapper implements Constants {
 
 		return null;
 	}
-	
+
 	public void inflatePreviousAnswers(byte[] bytes) {		
 		TreeElement savedRoot = XFormParser.restoreDataModel(bytes, null).getRoot();
-		
+
 		for(int t=0; t<savedRoot.getNumChildren(); t++) {
 			TreeElement childElement = savedRoot.getChildAt(t);
-			
+
 			if(answers == null) {
 				answers = new HashMap<String, String>();
 			}
-			
+
 			try {
 				Log.d(LOG, "HERE IS " + childElement.getValue().getValue());
 				answers.put(childElement.getName(), String.valueOf(childElement.getValue().getValue()));
 			} catch(NullPointerException e) {
 				// there is no value here
 				Log.e(LOG, "no value for " + childElement.getName());
-				
+
 				continue;
 			}
 		}
-		
+
 		form_def.preloadInstance(savedRoot);
-		
+
 	}
-	
+
 	public static JSONObject parseXMLAnswersAsJSON(byte[] bytes) {
 		TreeElement savedRoot = XFormParser.restoreDataModel(bytes, null).getRoot();
 		JSONObject answers = new JSONObject(); 
 		for(int t=0; t<savedRoot.getNumChildren(); t++) {
 			TreeElement childElement = savedRoot.getChildAt(t);
-			
+
 			try {
 				answers.put(childElement.getName(), childElement.getValue().getDisplayText());
 			} catch (JSONException e) {
@@ -160,7 +160,7 @@ public class FormWrapper implements Constants {
 				continue;
 			}
 		}
-		
+
 		return answers;
 	}
 
@@ -170,15 +170,15 @@ public class FormWrapper implements Constants {
 
 		fem = new FormEntryModel(form_def);
 		controller = new FormEntryController(fem);
-		
+
 		if(oldAnswers != null)
 			inflatePreviousAnswers(oldAnswers);
 		else
 			form_def.initialize(true);
-		
+
 		title = controller.getModel().getForm().getTitle();
 		form_index = controller.getModel().getFormIndex();
-		
+
 		controller.jumpToIndex(FormIndex.createBeginningOfFormIndex());
 		Localizer l = form_def.getLocalizer();
 		l.setDefaultLocale(l.getAvailableLocales()[0]);
@@ -193,7 +193,7 @@ public class FormWrapper implements Constants {
 				QuestionDef qd = (QuestionDef) fec.getFormElement();
 				Log.d(LOG, "this question def textId: " + qd.getTextID());
 				QD questionDef = null;
-				
+
 				if(answers != null && answers.containsKey(qd.getTextID()))
 					questionDef = new QD(qd, answers.get(qd.getTextID()));
 				else
@@ -204,7 +204,7 @@ public class FormWrapper implements Constants {
 
 				if(fep.getHelpText() != null)
 					questionDef.helperText = fep.getHelpText();
-				
+
 				if(fep.getControlType() == org.javarosa.core.model.Constants.CONTROL_SELECT_MULTI || fep.getControlType() == org.javarosa.core.model.Constants.CONTROL_SELECT_ONE) {
 					questionDef.selectChoiceText = new ArrayList<String>();
 					for(SelectChoice sc : fep.getSelectChoices()) {
@@ -234,12 +234,12 @@ public class FormWrapper implements Constants {
 			DocumentBuilder db = dbf.newDocumentBuilder();
 			Document doc = db.parse(payload.getPayloadStream());
 			doc.getDocumentElement().normalize();
-			
+
 			NodeList answers = doc.getDocumentElement().getChildNodes();
 			Log.d(LOG, "there are " + answers.getLength() + " child nodes");
 			for(int n=0; n<answers.getLength(); n++) {
 				Node node = answers.item(n);
-				
+
 				Log.d(LOG, "node: " + node.getNodeName());
 				if(node.getNodeType() == Node.ELEMENT_NODE) {
 					try {
@@ -248,10 +248,10 @@ public class FormWrapper implements Constants {
 						Log.e(LOG, "Could not get value for " + node.getNodeName() + "\n" + e.toString());
 						e.printStackTrace();
 					}
-					
+
 				}
 			}
-			
+
 			Log.d(LOG, "AS JSON (informa) \n" + informaObject.toString());
 
 			return informaObject;
@@ -355,10 +355,15 @@ public class FormWrapper implements Constants {
 			Log.d(LOG, "this event: " + event);
 			FormEntryCaption fec = fem.getCaptionPrompt();
 			if(fec.getFormElement() instanceof QuestionDef && ((QuestionDef) fec.getFormElement()).equals(qd)) {
-				Log.d(LOG, "fyi answer data: " + answer.hashCode() + " (" + answer.getValue() + ")");
-				controller.answerQuestion(answer);
+				try {
+					Log.d(LOG, "fyi answer data: " + answer.hashCode() + " (" + answer.getValue() + ")");
+					controller.answerQuestion(answer);
 
-				return controller.saveAnswer(answer);
+					return controller.saveAnswer(answer);
+				} catch(NullPointerException e) {
+					Log.d(LOG, e.toString());
+					e.printStackTrace();
+				}
 
 			}
 
@@ -370,14 +375,14 @@ public class FormWrapper implements Constants {
 	public static FormDef loadDefinition(InputStream xml) {
 		return XFormUtils.getFormFromInputStream(xml);
 	}
-	
+
 	public static byte[] getBytesFromFile(File file) throws IOException {
 		byte[] bytes = new byte[(int) file.length()];
-		
+
 		FileInputStream fis = new FileInputStream(file);
 		fis.read(bytes, 0, bytes.length);
 		fis.close();
-		
+
 		return bytes;
 	}
 }
