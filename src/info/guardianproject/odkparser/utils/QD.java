@@ -37,14 +37,14 @@ public class QD extends Model {
 	IAnswerData answer;
 	View answerHolder;
 	byte[] attachment = null;
-	
+
 	public String id = null;
 	public String initialValue = null;
 	public String questionText = null;
 	public String helperText = null;
 	public boolean hasInitialValue = false;
 	public ArrayList<String> selectChoiceText = null;
-	
+
 	public static Map<String, Integer> map(int[] viewParams) {
 		Map<String, Integer> viewMap = new HashMap<String, Integer>();
 		viewMap.put("rootViewId", viewParams[0]);
@@ -53,56 +53,83 @@ public class QD extends Model {
 		viewMap.put("answerHolder", viewParams[3]);
 		return viewMap;
 	}
-	
+
+	public void clear() {
+		switch(questionDef.getControlType()) {
+		case org.javarosa.core.model.Constants.CONTROL_INPUT:
+			((EditText) answerHolder).setText("");
+			break;
+		case org.javarosa.core.model.Constants.CONTROL_SELECT_ONE:
+			RadioGroup rg = ((RadioGroup) answerHolder);
+			for(int r = 0; r < selectChoiceText.size(); r++) {
+				((RadioButton) rg.getChildAt(r)).setChecked(false);
+			}
+			break;
+		case org.javarosa.core.model.Constants.CONTROL_SELECT_MULTI:
+			LinearLayout ll = ((LinearLayout) answerHolder);
+
+			for(int c = 0; c < selectChoiceText.size(); c++) {
+				((CheckBox) ll.getChildAt(c)).setChecked(false);				
+			}
+
+			answerHolder = ll;
+			break;
+		case org.javarosa.core.model.Constants.CONTROL_AUDIO_CAPTURE:
+			((ODKSeekBar) answerHolder).rawAudioData = null;
+			break;
+
+		}
+	}
+
 	public void setQuestionDef(QuestionDef questionDef) {
 		this.questionDef = questionDef;
 		this.id = this.questionDef.getTextID();
 	}
-	
+
 	public QD(QuestionDef questionDef) {
 		this(questionDef, null);
 	}
-	
+
 	public QD(QuestionDef questionDef, String initialValue) {
 		setQuestionDef(questionDef);
 		if(initialValue != null) {
 			this.initialValue = initialValue;
 		}
 	}
-	
+
 	public QD(View answerHolder) {
 		this(null, answerHolder);
 	}
-	
+
 	public QD(String initialValue, View answerHolder) {
-		this.initialValue = initialValue;
-		this.hasInitialValue = true;
+		this.initialValue = initialValue == "null" ? null : initialValue;
+		this.hasInitialValue = this.initialValue == null ? false : true;
 		this.answerHolder = answerHolder;
 	}
-	
+
 	public QuestionDef getQuestionDef() {
 		return questionDef;
 	}
-	
+
 	public View getAnswerHolder() {
 		return answerHolder;
 	}
-	
+
 	@SuppressWarnings("unchecked")
-	public View buildUI(Activity a, View view, String initialValue) {
+	public View buildUI(Activity a, View view) {
 		Map<String, Integer> viewMap = (Map<String, Integer>) view.getTag();
-		
+
 		TextView tv_questionText = (TextView) view.findViewById(viewMap.get("questionText"));
 		tv_questionText.setText(questionText);
-		
+
 		TextView tv_helperText = (TextView) view.findViewById(viewMap.get("helperText"));
 		if(helperText != null) {
 			tv_helperText.setText(helperText);
 		} else {
 			tv_helperText.setVisibility(View.GONE);
 		}
-		
-		
+
+
 		switch(questionDef.getControlType()) {
 		case org.javarosa.core.model.Constants.CONTROL_INPUT:
 			answerHolder = (EditText) view.findViewById(viewMap.get("answerHolder"));
@@ -115,29 +142,30 @@ public class QD extends Model {
 				rg.addView(rb);				
 			}
 			answerHolder = rg;
-			
+
 			break;
 		case org.javarosa.core.model.Constants.CONTROL_SELECT_MULTI:
 			LinearLayout ll = (LinearLayout) view.findViewById(viewMap.get("answerHolder"));
-			
-			
+
+
 			for(int c = 0; c < selectChoiceText.size(); c++) {
 				CheckBox cb = new CheckBox(a);
 				cb.setText(selectChoiceText.get(c));
 				ll.addView(cb);				
 			}
-			
+
 			answerHolder = ll;
 			break;
 		case org.javarosa.core.model.Constants.CONTROL_AUDIO_CAPTURE:
 			answerHolder = (LinearLayout) view.findViewById(viewMap.get("answerHolder"));
 			break;
 		}
-		
+
+		pin(initialValue, answerHolder);
 		Log.d(LOG, "OK THIS ANSWER HOLDER IS TYPE: " + answerHolder.getClass().getName());
 		return view;
 	}
-	
+
 	public void answer() {
 		switch(questionDef.getControlType()) {
 		case org.javarosa.core.model.Constants.CONTROL_INPUT:
@@ -145,14 +173,14 @@ public class QD extends Model {
 				((StringData) answer).setValue(((EditText) answerHolder).getText().toString());
 				Log.d(LOG, "setting answer " + ((EditText) answerHolder).getText().toString());
 			}
-		
+
 			break;
 		case org.javarosa.core.model.Constants.CONTROL_SELECT_ONE:
 			for(int o=0; o < ((ViewGroup) answerHolder).getChildCount(); o++) {
 				if(
 						((ViewGroup) answerHolder).getChildAt(o) instanceof RadioButton &&
 						((RadioButton) ((ViewGroup) answerHolder).getChildAt(o)).isChecked()
-				) {
+						) {
 					((SelectOneData) answer).setValue(questionDef.getChoices().get(o).selection());
 					Log.d(LOG, "setting answer " + questionDef.getChoices().get(o).selection().xmlValue);
 					break;
@@ -166,18 +194,18 @@ public class QD extends Model {
 				if(
 						((ViewGroup) answerHolder).getChildAt(m) instanceof CheckBox &&
 						((CheckBox) ((ViewGroup) answerHolder).getChildAt(m)).isChecked()
-				) {
+						) {
 					if(choices == null) {
 						choices = new Vector<Selection>();
 					}
-					
+
 					choices.add(questionDef.getChoices().get(choiceIndex).selection());
 					Log.d(LOG, "setting answer " + questionDef.getChoices().get(choiceIndex).selection().xmlValue);
 				}
-				
+
 				choiceIndex++;
 			}
-			
+
 			((SelectMultiData) answer).setValue(choices);
 			break;
 		case org.javarosa.core.model.Constants.CONTROL_AUDIO_CAPTURE:
@@ -185,69 +213,69 @@ public class QD extends Model {
 			break;
 		}
 	}
-	
+
 	public void commit(FormWrapper fw) {
 		if(fw.answerQuestion(questionDef, answer)) {
 			initialValue = String.valueOf(answer.getValue());
 		}
-		
+
 	}
-	
+
 	public void pin(String initialValue, View answerHolder) {
 		this.answerHolder = answerHolder;
-		
+
 		Log.d(LOG, "pinning to " + answerHolder.getClass().getName());
 		switch(questionDef.getControlType()) {
 		case org.javarosa.core.model.Constants.CONTROL_INPUT:
-			if(initialValue != null) {
+			if(initialValue != null && initialValue != "null") {
 				answer = new StringData(String.valueOf(initialValue));
 				((EditText) this.answerHolder).setText(initialValue);
 			} else {
 				answer = new StringData("");
 				((EditText) this.answerHolder).setHint(questionDef.getHelpText());
 			}
-			
+
 			break;
 		case org.javarosa.core.model.Constants.CONTROL_SELECT_ONE:
 			answer = new SelectOneData();
-			
-			if(initialValue != null) {
+
+			if(initialValue != null && initialValue != "null") {
 				Selection selection = questionDef.getChoices().get(Integer.parseInt(initialValue) - 1).selection();
 				((SelectOneData) answer).setValue(selection);
-				
+
 				RadioButton rb = (RadioButton) ((ViewGroup) this.answerHolder).getChildAt(Integer.parseInt(initialValue) - 1);
 				rb.setChecked(true);				
 			}
-			
+
 			break;
 		case org.javarosa.core.model.Constants.CONTROL_SELECT_MULTI:
 			answer = new SelectMultiData();
-			
-			if(initialValue != null) {
+
+			if(initialValue != null && initialValue != "null") {
 				Vector<Selection> selections = new Vector<Selection>();
 				String[] selectionsString = String.valueOf(initialValue).split(" ");
 				for(String s : selectionsString) {
 					Selection selection = questionDef.getChoices().get(Integer.parseInt(s) - 1).selection();
 					selections.add(selection);
-					
+
 					((CheckBox) ((ViewGroup) this.answerHolder).getChildAt(Integer.parseInt(s) - 1)).setChecked(true);
 				}
-				
+
 				((SelectMultiData) answer).setValue(selections);
 			}
 			break;
 		case org.javarosa.core.model.Constants.CONTROL_AUDIO_CAPTURE:
 			answer = new UncastData("");
 
-			if(initialValue != null) {
+			if(initialValue != null && initialValue != "null") {
 				answer = new UncastData(initialValue);
 				((UncastData) answer).setValue(initialValue);
 				((ODKSeekBar) answerHolder).setRawAudioData(initialValue.getBytes());
 			}
-			
+
 			break;
 		}
 	}
-	
-	
+
+
 }

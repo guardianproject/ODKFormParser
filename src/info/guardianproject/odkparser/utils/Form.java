@@ -83,7 +83,7 @@ public class Form extends Model {
 				Log.d(LOG, entry.getKey() + ": " + entry.getValue());
 			}
 
-			view = questionDef.buildUI(a, view, initialValues != null ? initialValues[v] : null);
+			view = questionDef.buildUI(a, view);
 			if(view != null) {
 				questionDef.pin(initialValues != null ? initialValues[v] : null, questionDef.getAnswerHolder());
 			}
