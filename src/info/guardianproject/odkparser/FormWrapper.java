@@ -58,7 +58,7 @@ public class FormWrapper implements Constants {
 	public FormEntryPrompt fep;
 
 	public ArrayList<QD> questions;
-	private Map<String, String> answers = null;
+	public Map<String, String> answers = null;
 
 	public String title;
 	public int num_questions = 0;
@@ -70,6 +70,10 @@ public class FormWrapper implements Constants {
 	}
 
 	private static final String LOG = Logger.FORM;
+
+	public interface ODKFormListener {
+		public boolean saveForm();
+	}
 
 	public FormWrapper(InputStream xml, boolean touch) {
 		form_def = loadDefinition(xml);
@@ -171,7 +175,7 @@ public class FormWrapper implements Constants {
 		fem = new FormEntryModel(form_def);
 		controller = new FormEntryController(fem);
 
-		if(oldAnswers != null)
+		if(oldAnswers != null && oldAnswers.length > 0)
 			inflatePreviousAnswers(oldAnswers);
 		else
 			form_def.initialize(true);
@@ -356,10 +360,12 @@ public class FormWrapper implements Constants {
 			FormEntryCaption fec = fem.getCaptionPrompt();
 			if(fec.getFormElement() instanceof QuestionDef && ((QuestionDef) fec.getFormElement()).equals(qd)) {
 				try {
-					Log.d(LOG, "fyi answer data: " + answer.hashCode() + " (" + answer.getValue() + ")");
-					controller.answerQuestion(answer);
+					if(answer.getValue() != null && !answer.getValue().equals("null")) {
+						Log.d(LOG, "fyi answer data: " + answer.hashCode() + " (" + answer.getValue() + ")");
+						controller.answerQuestion(answer);
 
-					return controller.saveAnswer(answer);
+						return controller.saveAnswer(answer);
+					}
 				} catch(NullPointerException e) {
 					Log.d(LOG, e.toString());
 					e.printStackTrace();

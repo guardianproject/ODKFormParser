@@ -161,8 +161,7 @@ public class QD extends Model {
 			break;
 		}
 
-		pin(initialValue, answerHolder);
-		Log.d(LOG, "OK THIS ANSWER HOLDER IS TYPE: " + answerHolder.getClass().getName());
+		pin(answerHolder);
 		return view;
 	}
 
@@ -171,7 +170,6 @@ public class QD extends Model {
 		case org.javarosa.core.model.Constants.CONTROL_INPUT:
 			if(((EditText) answerHolder).getText().length() > 0) {
 				((StringData) answer).setValue(((EditText) answerHolder).getText().toString());
-				Log.d(LOG, "setting answer " + ((EditText) answerHolder).getText().toString());
 			}
 
 			break;
@@ -182,34 +180,33 @@ public class QD extends Model {
 						((RadioButton) ((ViewGroup) answerHolder).getChildAt(o)).isChecked()
 						) {
 					((SelectOneData) answer).setValue(questionDef.getChoices().get(o).selection());
-					Log.d(LOG, "setting answer " + questionDef.getChoices().get(o).selection().xmlValue);
 					break;
 				}
 			}
 			break;
 		case org.javarosa.core.model.Constants.CONTROL_SELECT_MULTI:
-			List<Selection> choices = null;
+			List<Selection> choices = new Vector<Selection>();
 			int choiceIndex = 0;
 			for(int m=0; m< ((ViewGroup) answerHolder).getChildCount(); m++) {
 				if(
 						((ViewGroup) answerHolder).getChildAt(m) instanceof CheckBox &&
 						((CheckBox) ((ViewGroup) answerHolder).getChildAt(m)).isChecked()
 						) {
-					if(choices == null) {
-						choices = new Vector<Selection>();
-					}
-
 					choices.add(questionDef.getChoices().get(choiceIndex).selection());
-					Log.d(LOG, "setting answer " + questionDef.getChoices().get(choiceIndex).selection().xmlValue);
 				}
 
 				choiceIndex++;
 			}
 
 			((SelectMultiData) answer).setValue(choices);
+
 			break;
 		case org.javarosa.core.model.Constants.CONTROL_AUDIO_CAPTURE:
-			((UncastData) answer).setValue(((ODKSeekBar) answerHolder).rawAudioData);
+			Log.d(LOG, "JUST CHECKING ON AUDIO: " + String.valueOf(((ODKSeekBar) answerHolder).rawAudioData));
+			if(((ODKSeekBar) answerHolder).rawAudioData != null) {
+				((UncastData) answer).setValue(((ODKSeekBar) answerHolder).rawAudioData);
+			}
+
 			break;
 		}
 	}
@@ -221,7 +218,7 @@ public class QD extends Model {
 
 	}
 
-	public void pin(String initialValue, View answerHolder) {
+	public void pin(View answerHolder) {
 		this.answerHolder = answerHolder;
 
 		Log.d(LOG, "pinning to " + answerHolder.getClass().getName());
@@ -272,6 +269,9 @@ public class QD extends Model {
 				((UncastData) answer).setValue(initialValue);
 				((ODKSeekBar) answerHolder).setRawAudioData(initialValue.getBytes());
 			}
+			
+			Log.d(LOG, "JUST CHECKING ON AUDIO: " + String.valueOf(((ODKSeekBar) answerHolder).rawAudioData));
+			Log.d(LOG, "JUST CHECKING ON AUDIO: " + initialValue);
 
 			break;
 		}
