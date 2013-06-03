@@ -7,6 +7,12 @@ public interface Constants {
 		public final static String PARSER = "************ FORM PARSER *************";
 		public static final String WIDGET_FACTORY = "************ WIDGET FACTORY *************";
 	}
+	
+	public final static class RecorderState {
+		public final static int IS_IDLE = 1;
+		public final static int IS_RECORDING = 2;
+		public final static int IS_PLAYING = 3;
+	}
 
 	public final static class Form {
 		public final static String[] SERIALIABLE_CLASSES = {

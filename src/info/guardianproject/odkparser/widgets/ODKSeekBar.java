@@ -5,11 +5,14 @@ import info.guardianproject.odkparser.Constants.Logger;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import android.content.Context;
 import android.media.MediaPlayer;
+import android.media.MediaPlayer.OnCompletionListener;
 import android.media.MediaPlayer.OnInfoListener;
 import android.media.MediaRecorder;
 import android.os.Handler;
@@ -35,7 +38,12 @@ public class ODKSeekBar extends SeekBar implements OnSeekBarChangeListener, OnIn
 	
 	public byte[] rawAudioData;
 	
+	private boolean hasPlayedOnce = false;
 	private final static String LOG = Logger.UI;
+	
+	public interface OnMediaRecorderStopListener {
+		public void onMediaRecorderStop();
+	}
 
 	public void start(Context c) {
 		this.c = c;
@@ -52,7 +60,6 @@ public class ODKSeekBar extends SeekBar implements OnSeekBarChangeListener, OnIn
 	public ODKSeekBar(Context context) {
 		super(context);
 		start(context);
-
 	}
 
 	public ODKSeekBar(Context context, AttributeSet attrs) {
@@ -60,7 +67,7 @@ public class ODKSeekBar extends SeekBar implements OnSeekBarChangeListener, OnIn
 		start(context);
 	}
 	
-	private void saveAudio() {
+	public void saveAudio() {
 		try {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			GZIPOutputStream gos = new GZIPOutputStream(baos);
@@ -85,7 +92,6 @@ public class ODKSeekBar extends SeekBar implements OnSeekBarChangeListener, OnIn
 			Log.e(LOG, e.toString());
 			e.printStackTrace();
 		}
-		
 	}
 	
 	private void processAudio() {
@@ -113,12 +119,22 @@ public class ODKSeekBar extends SeekBar implements OnSeekBarChangeListener, OnIn
 		}
 	}
 
+	public void init(java.io.File recordingFile, final OnCompletionListener ocl) {
+		init(recordingFile);
+		mp.setOnCompletionListener(new OnCompletionListener() {
+			@Override
+			public void onCompletion(MediaPlayer mp) {
+				if(hasPlayedOnce) {
+					ocl.onCompletion(mp);
+				}
+			}
+		});
+	}
+	
 	public void init(java.io.File recordingFile) {
 		this.recordingFile = recordingFile;
 		
 		mr.setOutputFile(recordingFile.getAbsolutePath());
-
-		mp = new MediaPlayer();
 		mp.setOnInfoListener(this);
 		
 		h.post(new Runnable() {
@@ -142,12 +158,13 @@ public class ODKSeekBar extends SeekBar implements OnSeekBarChangeListener, OnIn
 	
 	public void setRawAudioData(byte[] rawAudioData) {
 		this.rawAudioData = rawAudioData;
+		rawAudioData = null;
 		
 		// b64-decode, unzip audio bytes and dump it in public
 		try {
 			java.io.FileOutputStream fos = new java.io.FileOutputStream(recordingFile);
 			
-			GZIPInputStream gzip = new GZIPInputStream(new ByteArrayInputStream(Base64.decode(rawAudioData, Base64.DEFAULT)));
+			GZIPInputStream gzip = new GZIPInputStream(new ByteArrayInputStream(Base64.decode(this.rawAudioData, Base64.DEFAULT)));
 			byte[] buf = new byte[1024];
 			int b;
 			while((b = gzip.read(buf)) > 0) {
@@ -179,18 +196,25 @@ public class ODKSeekBar extends SeekBar implements OnSeekBarChangeListener, OnIn
 	}
 	
 	public void play() {
+		Log.d(LOG, "request PLAY");
 		canRecord = false;
 		mp.start();
 		isPlaying = true;
+		
+		if(!hasPlayedOnce) {
+			hasPlayedOnce = true;
+		}
 	}
 
 	public void pause() {
+		Log.d(LOG, "request PAUSE");
 		canRecord = true;
 		mp.pause();
 		isPlaying = false;
 	}
 
 	public void record() {
+		Log.d(LOG, "request RECORD");
 		try {
 			mr.prepare();
 			mr.start();
@@ -204,23 +228,31 @@ public class ODKSeekBar extends SeekBar implements OnSeekBarChangeListener, OnIn
 			Log.e(LOG, e.toString());
 			e.printStackTrace();
 		}
-		
-		
 	}
 	
 	public void stop() {
+		Log.d(LOG, "request STOP");
 		canPlay = true;
 		mr.stop();
 		mr.release();
 		isRecording = false;
 		
-		processAudio();
+		try {
+			((OnMediaRecorderStopListener) c).onMediaRecorderStop();
+			return;
+		} catch(ClassCastException e) {
+			Log.e(LOG, e.toString());			
+		} catch(NullPointerException e) {
+			saveAudio();
+		}
+		
 		saveAudio();
+		processAudio();
+		
 	}
 	
 	@Override
 	public boolean onInfo(MediaPlayer mp, int what, int extra) {
-		// TODO Auto-generated method stub
 		return false;
 	}
 

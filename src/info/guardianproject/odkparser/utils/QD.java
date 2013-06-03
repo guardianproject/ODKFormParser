@@ -171,7 +171,7 @@ public class QD extends Model {
 			if(((EditText) answerHolder).getText().length() > 0) {
 				((StringData) answer).setValue(((EditText) answerHolder).getText().toString());
 			}
-
+			
 			break;
 		case org.javarosa.core.model.Constants.CONTROL_SELECT_ONE:
 			for(int o=0; o < ((ViewGroup) answerHolder).getChildCount(); o++) {
@@ -183,6 +183,7 @@ public class QD extends Model {
 					break;
 				}
 			}
+			
 			break;
 		case org.javarosa.core.model.Constants.CONTROL_SELECT_MULTI:
 			List<Selection> choices = new Vector<Selection>();
