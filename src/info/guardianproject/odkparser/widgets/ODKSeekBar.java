@@ -135,6 +135,8 @@ public class ODKSeekBar extends SeekBar implements OnSeekBarChangeListener, OnIn
 		this.recordingFile = recordingFile;
 		
 		mr.setOutputFile(recordingFile.getAbsolutePath());
+		
+		mp = new MediaPlayer();
 		mp.setOnInfoListener(this);
 		
 		h.post(new Runnable() {
@@ -253,7 +255,7 @@ public class ODKSeekBar extends SeekBar implements OnSeekBarChangeListener, OnIn
 	
 	@Override
 	public boolean onInfo(MediaPlayer mp, int what, int extra) {
-		return false;
+		return true;
 	}
 
 	@Override

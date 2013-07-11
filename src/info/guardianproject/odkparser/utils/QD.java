@@ -44,6 +44,10 @@ public class QD extends Model {
 	public String helperText = null;
 	public boolean hasInitialValue = false;
 	public ArrayList<String> selectChoiceText = null;
+	
+	public QD() {
+		super();
+	}
 
 	public static Map<String, Integer> map(int[] viewParams) {
 		Map<String, Integer> viewMap = new HashMap<String, Integer>();

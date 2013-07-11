@@ -92,7 +92,7 @@ public class FormWrapper implements Constants {
 		init(null);
 	}
 
-	public FormWrapper(InputStream xml, byte[] oldAnswers) {
+	public FormWrapper(InputStream xml, byte[] oldAnswers) {		
 		form_def = loadDefinition(xml);
 		init(oldAnswers);
 	}
