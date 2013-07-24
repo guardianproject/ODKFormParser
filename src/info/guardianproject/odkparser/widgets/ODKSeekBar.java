@@ -49,9 +49,7 @@ public class ODKSeekBar extends SeekBar implements OnSeekBarChangeListener, OnIn
 		this.c = c;
 		
 		mr = new MediaRecorder();
-		mr.setAudioSource(MediaRecorder.AudioSource.MIC);
-		mr.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
-		mr.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+		initMediaRecorder();
 
 		setOnSeekBarChangeListener(this);
 		setProgress(0);
@@ -65,6 +63,12 @@ public class ODKSeekBar extends SeekBar implements OnSeekBarChangeListener, OnIn
 	public ODKSeekBar(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		start(context);
+	}
+	
+	private void initMediaRecorder() {
+		mr.setAudioSource(MediaRecorder.AudioSource.MIC);
+		mr.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+		mr.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
 	}
 	
 	public void saveAudio() {
@@ -119,19 +123,23 @@ public class ODKSeekBar extends SeekBar implements OnSeekBarChangeListener, OnIn
 		}
 	}
 
-	public void init(java.io.File recordingFile, final OnCompletionListener ocl) {
-		init(recordingFile);
-		mp.setOnCompletionListener(new OnCompletionListener() {
-			@Override
-			public void onCompletion(MediaPlayer mp) {
-				if(hasPlayedOnce) {
-					ocl.onCompletion(mp);
-				}
-			}
-		});
+	public void reInit(java.io.File recordingFile) {
+		reInit(recordingFile, null);
+	}
+	
+	public void reInit(java.io.File recordingFile, final OnCompletionListener ocl) {
+		mr.reset();
+		this.recordingFile.delete();
+		
+		initMediaRecorder();
+		init(recordingFile, ocl);
 	}
 	
 	public void init(java.io.File recordingFile) {
+		init(recordingFile, null);
+	}
+	
+	public void init(java.io.File recordingFile, final OnCompletionListener ocl) {
 		this.recordingFile = recordingFile;
 		
 		mr.setOutputFile(recordingFile.getAbsolutePath());
@@ -156,6 +164,17 @@ public class ODKSeekBar extends SeekBar implements OnSeekBarChangeListener, OnIn
 			}
 
 		});
+		
+		if(ocl != null) {
+			mp.setOnCompletionListener(new OnCompletionListener() {
+				@Override
+				public void onCompletion(MediaPlayer mp) {
+					if(hasPlayedOnce) {
+						ocl.onCompletion(mp);
+					}
+				}
+			});
+		}
 	}
 	
 	public void setRawAudioData(byte[] rawAudioData) {
@@ -241,11 +260,11 @@ public class ODKSeekBar extends SeekBar implements OnSeekBarChangeListener, OnIn
 		
 		try {
 			((OnMediaRecorderStopListener) c).onMediaRecorderStop();
-			return;
+			//return;
 		} catch(ClassCastException e) {
 			Log.e(LOG, e.toString());			
 		} catch(NullPointerException e) {
-			saveAudio();
+			Log.e(LOG, e.toString());
 		}
 		
 		saveAudio();
