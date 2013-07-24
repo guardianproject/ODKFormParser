@@ -98,6 +98,7 @@ public class QD extends Model {
 		setQuestionDef(questionDef);
 		if(initialValue != null) {
 			this.initialValue = initialValue;
+			this.hasInitialValue = true;
 		}
 	}
 
@@ -105,7 +106,7 @@ public class QD extends Model {
 		this(null, answerHolder);
 	}
 
-	public QD(String initialValue, View answerHolder) {
+	public QD(String initialValue, View answerHolder) {		
 		this.initialValue = initialValue == "null" ? null : initialValue;
 		this.hasInitialValue = this.initialValue == null ? false : true;
 		this.answerHolder = answerHolder;
@@ -209,7 +210,7 @@ public class QD extends Model {
 		case org.javarosa.core.model.Constants.CONTROL_AUDIO_CAPTURE:
 			Log.d(LOG, "JUST CHECKING ON AUDIO: " + String.valueOf(((ODKSeekBar) answerHolder).rawAudioData));
 			if(((ODKSeekBar) answerHolder).rawAudioData != null) {
-				((UncastData) answer).setValue(((ODKSeekBar) answerHolder).rawAudioData);
+				((UncastData) answer).setValue(new String(((ODKSeekBar) answerHolder).rawAudioData));
 			}
 
 			break;

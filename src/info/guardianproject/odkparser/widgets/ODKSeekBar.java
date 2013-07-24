@@ -36,7 +36,7 @@ public class ODKSeekBar extends SeekBar implements OnSeekBarChangeListener, OnIn
 	public boolean canPlay = false;
 	public boolean canRecord = false;
 	
-	public byte[] rawAudioData;
+	public byte[] rawAudioData = null;
 	
 	private boolean hasPlayedOnce = false;
 	private final static String LOG = Logger.UI;
