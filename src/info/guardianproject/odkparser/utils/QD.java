@@ -1,19 +1,15 @@
 package info.guardianproject.odkparser.utils;
 
 import info.guardianproject.odkparser.FormWrapper;
-import info.guardianproject.odkparser.R;
 import info.guardianproject.odkparser.widgets.ODKSeekBar;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
-import java.util.Map.Entry;
 
 import org.javarosa.core.model.QuestionDef;
-import org.javarosa.core.model.SelectChoice;
 import org.javarosa.core.model.data.IAnswerData;
 import org.javarosa.core.model.data.SelectMultiData;
 import org.javarosa.core.model.data.SelectOneData;
@@ -208,7 +204,7 @@ public class QD extends Model {
 
 			break;
 		case org.javarosa.core.model.Constants.CONTROL_AUDIO_CAPTURE:
-			Log.d(LOG, "JUST CHECKING ON AUDIO: " + String.valueOf(((ODKSeekBar) answerHolder).rawAudioData));
+			//Log.d(LOG, "JUST CHECKING ON AUDIO: " + String.valueOf(((ODKSeekBar) answerHolder).rawAudioData));
 			if(((ODKSeekBar) answerHolder).rawAudioData != null) {
 				((UncastData) answer).setValue(new String(((ODKSeekBar) answerHolder).rawAudioData));
 			}
@@ -276,8 +272,8 @@ public class QD extends Model {
 				((ODKSeekBar) answerHolder).setRawAudioData(initialValue.getBytes());
 			}
 			
-			Log.d(LOG, "JUST CHECKING ON AUDIO: " + String.valueOf(((ODKSeekBar) answerHolder).rawAudioData));
-			Log.d(LOG, "JUST CHECKING ON AUDIO: " + initialValue);
+			//Log.d(LOG, "JUST CHECKING ON AUDIO: " + String.valueOf(((ODKSeekBar) answerHolder).rawAudioData));
+			//Log.d(LOG, "JUST CHECKING ON AUDIO: " + initialValue);
 
 			break;
 		}

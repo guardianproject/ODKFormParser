@@ -134,11 +134,11 @@ public class FormWrapper implements Constants {
 			}
 
 			try {
-				Log.d(LOG, "HERE IS " + childElement.getValue().getValue());
+				//Log.d(LOG, "HERE IS " + childElement.getValue().getValue());
 				answers.put(childElement.getName(), String.valueOf(childElement.getValue().getValue()));
 			} catch(NullPointerException e) {
 				// there is no value here
-				Log.e(LOG, "no value for " + childElement.getName());
+				//Log.e(LOG, "no value for " + childElement.getName());
 
 				continue;
 			}
@@ -195,7 +195,7 @@ public class FormWrapper implements Constants {
 					questions = new ArrayList<QD>();
 
 				QuestionDef qd = (QuestionDef) fec.getFormElement();
-				Log.d(LOG, "this question def textId: " + qd.getTextID());
+				//Log.d(LOG, "this question def textId: " + qd.getTextID());
 				QD questionDef = null;
 
 				if(answers != null && answers.containsKey(qd.getTextID()))
@@ -240,23 +240,22 @@ public class FormWrapper implements Constants {
 			doc.getDocumentElement().normalize();
 
 			NodeList answers = doc.getDocumentElement().getChildNodes();
-			Log.d(LOG, "there are " + answers.getLength() + " child nodes");
+			//Log.d(LOG, "there are " + answers.getLength() + " child nodes");
 			for(int n=0; n<answers.getLength(); n++) {
 				Node node = answers.item(n);
 
-				Log.d(LOG, "node: " + node.getNodeName());
+				//Log.d(LOG, "node: " + node.getNodeName());
 				if(node.getNodeType() == Node.ELEMENT_NODE) {
 					try {
 						informaObject.put(node.getNodeName(), ((Element) node).getElementsByTagName(node.getNodeName()).item(0).getChildNodes().item(0).getNodeValue());
 					} catch(NullPointerException e) {
-						Log.e(LOG, "Could not get value for " + node.getNodeName() + "\n" + e.toString());
+						//Log.e(LOG, "Could not get value for " + node.getNodeName() + "\n" + e.toString());
 						e.printStackTrace();
 					}
 
 				}
 			}
 
-			Log.d(LOG, "AS JSON (informa) \n" + informaObject.toString());
 
 			return informaObject;
 		} catch(IOException e) {
@@ -356,12 +355,11 @@ public class FormWrapper implements Constants {
 
 		int event = controller.jumpToIndex(FormIndex.createBeginningOfFormIndex());
 		do {
-			Log.d(LOG, "this event: " + event);
 			FormEntryCaption fec = fem.getCaptionPrompt();
 			if(fec.getFormElement() instanceof QuestionDef && ((QuestionDef) fec.getFormElement()).equals(qd)) {
 				try {
 					if(answer.getValue() != null && !answer.getValue().equals("null")) {
-						Log.d(LOG, "fyi answer data: " + answer.hashCode() + " (" + answer.getValue() + ")");
+						//Log.d(LOG, "fyi answer data: " + answer.hashCode() + " (" + answer.getValue() + ")");
 						controller.answerQuestion(answer);
 
 						return controller.saveAnswer(answer);
