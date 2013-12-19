@@ -239,11 +239,16 @@ public class QD extends Model {
 			answer = new SelectOneData();
 
 			if(initialValue != null && initialValue != "null") {
-				Selection selection = questionDef.getChoices().get(Integer.parseInt(initialValue) - 1).selection();
-				((SelectOneData) answer).setValue(selection);
+				try {
+					Selection selection = questionDef.getChoices().get(Integer.parseInt(initialValue) - 1).selection();
+					((SelectOneData) answer).setValue(selection);
 
-				RadioButton rb = (RadioButton) ((ViewGroup) this.answerHolder).getChildAt(Integer.parseInt(initialValue) - 1);
-				rb.setChecked(true);				
+					RadioButton rb = (RadioButton) ((ViewGroup) this.answerHolder).getChildAt(Integer.parseInt(initialValue) - 1);
+					rb.setChecked(true);
+				} catch(ArrayIndexOutOfBoundsException e) {
+					Log.e(LOG, e.toString());
+					e.printStackTrace();
+				}
 			}
 
 			break;
