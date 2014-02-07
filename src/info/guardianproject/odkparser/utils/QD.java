@@ -238,7 +238,7 @@ public class QD extends Model {
 		case org.javarosa.core.model.Constants.CONTROL_SELECT_ONE:
 			answer = new SelectOneData();
 
-			if(initialValue != null && initialValue != "null") {
+			if(initialValue != null && initialValue != "null" && (!initialValue.equals("0"))) {
 				try {
 					Selection selection = questionDef.getChoices().get(Integer.parseInt(initialValue) - 1).selection();
 					((SelectOneData) answer).setValue(selection);
@@ -259,10 +259,14 @@ public class QD extends Model {
 				Vector<Selection> selections = new Vector<Selection>();
 				String[] selectionsString = String.valueOf(initialValue).split(" ");
 				for(String s : selectionsString) {
-					Selection selection = questionDef.getChoices().get(Integer.parseInt(s) - 1).selection();
-					selections.add(selection);
-
-					((CheckBox) ((ViewGroup) this.answerHolder).getChildAt(Integer.parseInt(s) - 1)).setChecked(true);
+					
+					if (!s.equals("0"))
+					{
+						Selection selection = questionDef.getChoices().get(Integer.parseInt(s) - 1).selection();
+						selections.add(selection);
+	
+						((CheckBox) ((ViewGroup) this.answerHolder).getChildAt(Integer.parseInt(s) - 1)).setChecked(true);
+					}
 				}
 
 				((SelectMultiData) answer).setValue(selections);
