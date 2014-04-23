@@ -242,9 +242,7 @@ public class QD extends Model {
 		case org.javarosa.core.model.Constants.CONTROL_SELECT_ONE:
 			answer = new SelectOneData();
 
-			if(initialValue != null && initialValue != "null") {
-				Log.d(LOG, "HEY THE INITIAL VALUE: " + initialValue);
-				
+			if(initialValue != null && initialValue != "null") {				
 				int pos = Integer.parseInt(initialValue) == 0 ? 0 : Integer.parseInt(initialValue) - 1;
 				Selection selection = questionDef.getChoices().get(pos).selection();
 				((SelectOneData) answer).setValue(selection);
