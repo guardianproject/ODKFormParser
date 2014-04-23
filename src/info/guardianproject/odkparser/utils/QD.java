@@ -1,15 +1,19 @@
 package info.guardianproject.odkparser.utils;
 
 import info.guardianproject.odkparser.FormWrapper;
+import info.guardianproject.odkparser.R;
 import info.guardianproject.odkparser.widgets.ODKSeekBar;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
+import java.util.Map.Entry;
 
 import org.javarosa.core.model.QuestionDef;
+import org.javarosa.core.model.SelectChoice;
 import org.javarosa.core.model.data.IAnswerData;
 import org.javarosa.core.model.data.SelectMultiData;
 import org.javarosa.core.model.data.SelectOneData;
@@ -204,7 +208,7 @@ public class QD extends Model {
 
 			break;
 		case org.javarosa.core.model.Constants.CONTROL_AUDIO_CAPTURE:
-			//Log.d(LOG, "JUST CHECKING ON AUDIO: " + String.valueOf(((ODKSeekBar) answerHolder).rawAudioData));
+			Log.d(LOG, "JUST CHECKING ON AUDIO: " + String.valueOf(((ODKSeekBar) answerHolder).rawAudioData));
 			if(((ODKSeekBar) answerHolder).rawAudioData != null) {
 				((UncastData) answer).setValue(new String(((ODKSeekBar) answerHolder).rawAudioData));
 			}
@@ -238,17 +242,15 @@ public class QD extends Model {
 		case org.javarosa.core.model.Constants.CONTROL_SELECT_ONE:
 			answer = new SelectOneData();
 
-			if(initialValue != null && initialValue != "null" && (!initialValue.equals("0"))) {
-				try {
-					Selection selection = questionDef.getChoices().get(Integer.parseInt(initialValue) - 1).selection();
-					((SelectOneData) answer).setValue(selection);
+			if(initialValue != null && initialValue != "null") {
+				Log.d(LOG, "HEY THE INITIAL VALUE: " + initialValue);
+				
+				int pos = Integer.parseInt(initialValue) == 0 ? 0 : Integer.parseInt(initialValue) - 1;
+				Selection selection = questionDef.getChoices().get(pos).selection();
+				((SelectOneData) answer).setValue(selection);
 
-					RadioButton rb = (RadioButton) ((ViewGroup) this.answerHolder).getChildAt(Integer.parseInt(initialValue) - 1);
-					rb.setChecked(true);
-				} catch(ArrayIndexOutOfBoundsException e) {
-					Log.e(LOG, e.toString());
-					e.printStackTrace();
-				}
+				RadioButton rb = (RadioButton) ((ViewGroup) this.answerHolder).getChildAt(Integer.parseInt(initialValue) - 1);
+				rb.setChecked(true);				
 			}
 
 			break;
@@ -259,14 +261,11 @@ public class QD extends Model {
 				Vector<Selection> selections = new Vector<Selection>();
 				String[] selectionsString = String.valueOf(initialValue).split(" ");
 				for(String s : selectionsString) {
-					
-					if (!s.equals("0"))
-					{
-						Selection selection = questionDef.getChoices().get(Integer.parseInt(s) - 1).selection();
-						selections.add(selection);
-	
-						((CheckBox) ((ViewGroup) this.answerHolder).getChildAt(Integer.parseInt(s) - 1)).setChecked(true);
-					}
+					int pos = Integer.parseInt(initialValue) == 0 ? 0 : Integer.parseInt(initialValue) - 1;
+					Selection selection = questionDef.getChoices().get(pos).selection();
+					selections.add(selection);
+
+					((CheckBox) ((ViewGroup) this.answerHolder).getChildAt(Integer.parseInt(s) - 1)).setChecked(true);
 				}
 
 				((SelectMultiData) answer).setValue(selections);
@@ -281,8 +280,8 @@ public class QD extends Model {
 				((ODKSeekBar) answerHolder).setRawAudioData(initialValue.getBytes());
 			}
 			
-			//Log.d(LOG, "JUST CHECKING ON AUDIO: " + String.valueOf(((ODKSeekBar) answerHolder).rawAudioData));
-			//Log.d(LOG, "JUST CHECKING ON AUDIO: " + initialValue);
+			Log.d(LOG, "JUST CHECKING ON AUDIO: " + String.valueOf(((ODKSeekBar) answerHolder).rawAudioData));
+			Log.d(LOG, "JUST CHECKING ON AUDIO: " + initialValue);
 
 			break;
 		}
